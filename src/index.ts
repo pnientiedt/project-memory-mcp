@@ -94,7 +94,11 @@ embeddings:
 git:
   # Enable post-commit hook integration
   hook_enabled: true
-  # Port the MCP server listens on for git events
+  # Port the MCP server listens on for git events.
+  # IMPORTANT: if you change this, also set PMM_HOOK_PORT=<value> in your shell
+  # environment (e.g. in .bashrc/.zshrc) so the post-commit hook sends to the
+  # same port. The hook reads PMM_HOOK_PORT at runtime; this file only controls
+  # the server's listening port.
   hook_port: 47832
   # Commits containing this string skip memory update
   skip_keyword: "[skip-memory]"
