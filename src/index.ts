@@ -232,17 +232,17 @@ exit 0
   const { fileURLToPath } = await import("url");
   const { dirname, join } = await import("path");
   const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-  const commandSrc = join(packageRoot, "commands", "init-memory.md");
-  const commandDest = ".claude/commands/init-memory.md";
+  const commandSrc = join(packageRoot, "commands", "init-project-memory.md");
+  const commandDest = ".claude/commands/init-project-memory.md";
   if (exists(commandSrc)) {
     if (!exists(".claude/commands")) {
       mkdir(".claude/commands", { recursive: true });
     }
     if (exists(commandDest)) {
-      step("↷", "/init-memory Claude command already installed — skipped");
+      step("↷", "/init-project-memory Claude command already installed — skipped");
     } else {
       writeFileSync(commandDest, readFile(commandSrc, "utf-8"), "utf-8");
-      step("✓", "/init-memory Claude command installed at .claude/commands/init-memory.md");
+      step("✓", "/init-project-memory Claude command installed at .claude/commands/init-project-memory.md");
     }
   }
 
@@ -250,6 +250,6 @@ exit 0
   process.stdout.write(
     "\nNext steps:\n" +
     "  1. Restart Claude Code to load the MCP server\n" +
-    "  2. Run /init-memory to bootstrap memory from your git history\n"
+    "  2. Run /init-project-memory to bootstrap memory from your git history\n"
   );
 }
