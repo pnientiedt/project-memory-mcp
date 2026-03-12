@@ -4,6 +4,20 @@ This file tracks progress across Ralph Wiggum sessions. Each session appends ent
 
 ---
 
+## [2026-03-13] Ralph Loop — Epic pmm-1ux COMPLETE
+
+**Epic:** Fix auto-update pipeline: git hook → Ollama → memory files
+**Status:** EPIC_COMPLETE — all 5 tasks closed
+
+### Key deliverables
+- `.git/hooks/post-commit` installed — this repo now self-hosts the hook (pmm-dl6)
+- `memory-commit.ts` — `autoCommitMemory()` now resolves git root via `rev-parse --show-toplevel`; errors logged to stderr instead of silently swallowed (pmm-sw5)
+- `watcher.ts` — calls `autoCommitMemory()` after writing context.md; skipKeyword wired from config (pmm-4mr)
+- `types.ts` + `git-hook.ts` + `server.ts` + `index.ts` — Logger type threaded through; git-hook events (received, updated, committed) now appear as structured JSON in server.log (pmm-qm1)
+- `git-hook.test.ts` — 4 new E2E tests (101 total): file content assertion, logger events, skip-memory guard, autoCommitMemory mock (pmm-2gt)
+
+---
+
 ## [2026-03-12] Ralph Loop — Epic pmm-sks COMPLETE
 
 **Epic:** Issue Tracker Integration in /init-project-memory
