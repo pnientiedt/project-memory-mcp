@@ -123,3 +123,11 @@ This file tracks project milestones and progress.
 The test phase of the project has been successfully completed. A total of three test runs were conducted, and all tests were passed without any issues.
 
 No additional information is available as the commit message is minimal and only contains the word "test". However, this update indicates that the project has reached a significant milestone, and the next steps can proceed with confidence.
+<!-- date:2026-03-12 hash:3f57cfe60610 -->
+## 📋 Session Summary — 2026-03-12
+
+**Date:** 2026-03-12T23:19:20.403Z
+**Duration:** 25 minutes
+**Tool calls:** 19
+**Decisions:** Stdio transport over HTTP for MCP server; Scoped npm package name @pnientiedt/project-memory-mcp; Local-only embeddings via transformers.js (all-MiniLM-L6-v2); Git hook communicates via HTTP POST (not shell pipe); Memory files are versioned Markdown in git; Upsert support for write tools (v0.2.0)
+**Tools used:** add_context, add_decision, log_tech_debt, get_memory
