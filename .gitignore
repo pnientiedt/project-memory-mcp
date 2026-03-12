@@ -3,3 +3,9 @@
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+
+# Backup directories
+.claude.backup-*/
+
+# Claude Code logs
+.claude/logs/
