@@ -60,7 +60,7 @@ export class FileService {
 
     // Idempotency check (F-25): skip if entry already exists
     const entryHash = hashContent(entry);
-    if (existing.includes(`<!-- hash:${entryHash} -->`)) {
+    if (existing.includes(`hash:${entryHash}`)) {
       return entry;
     }
 
