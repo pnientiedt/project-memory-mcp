@@ -1,8 +1,20 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { FileService } from "../services/file.js";
+import type { EmbeddingService } from "../services/embedding.js";
+import { contentId } from "../services/embedding.js";
+import type { MemoryScope } from "../types.js";
 
-export function registerWriteTools(server: McpServer, fileService: FileService): void {
+export function registerWriteTools(
+  server: McpServer,
+  fileService: FileService,
+  embeddingService?: EmbeddingService,
+): void {
+  async function autoEmbed(scope: MemoryScope, section: string, content: string): Promise<void> {
+    if (!embeddingService) return;
+    const id = contentId(scope, section, content);
+    await embeddingService.embed(id, scope, section, content).catch(() => {/* non-blocking */});
+  }
   // add_decision (F-20)
   server.registerTool(
     "add_decision",
@@ -27,6 +39,7 @@ export function registerWriteTools(server: McpServer, fileService: FileService):
       ].filter(Boolean).join("\n");
 
       const written = fileService.append("decisions", entry);
+      await autoEmbed("decisions", title, entry);
       return {
         content: [{ type: "text" as const, text: `Entscheidung gespeichert:\n\n${written}` }],
       };
@@ -59,6 +72,7 @@ export function registerWriteTools(server: McpServer, fileService: FileService):
       }
       const entry = lines.join("\n");
       const written = fileService.append("tech_debt", entry);
+      await autoEmbed("tech_debt", `Tech Debt [${severity}]`, entry);
       return {
         content: [{ type: "text" as const, text: `Tech Debt erfasst:\n\n${written}` }],
       };
@@ -93,6 +107,7 @@ export function registerWriteTools(server: McpServer, fileService: FileService):
       }
       const entry = lines.join("\n");
       const written = fileService.append("progress", entry);
+      await autoEmbed("progress", milestone, entry);
       return {
         content: [{ type: "text" as const, text: `Fortschritt aktualisiert:\n\n${written}` }],
       };
@@ -113,6 +128,7 @@ export function registerWriteTools(server: McpServer, fileService: FileService):
       const header = category ? `## [${category}]` : "## Kontext";
       const entry = `${header}\n\n${content}`;
       const written = fileService.append("context", entry);
+      await autoEmbed("context", category || "Kontext", entry);
       return {
         content: [{ type: "text" as const, text: `Kontext gespeichert:\n\n${written}` }],
       };

@@ -40,7 +40,7 @@ export function createServer(configPath?: string): ProjectMemoryServer {
   );
 
   registerMemoryResources(mcp, fileService);
-  registerWriteTools(mcp, fileService);
+  registerWriteTools(mcp, fileService, embeddingService);
   registerReadTools(mcp, fileService, embeddingService);
   registerAdminTools(mcp, fileService, embeddingService);
 
