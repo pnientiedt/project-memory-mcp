@@ -228,8 +228,28 @@ exit 0
     step("↷", "Ollama not running — skipping model pull (run 'ollama pull llama3.2' later)");
   }
 
+  // Step 7: Install /init-memory Claude slash command
+  const { fileURLToPath } = await import("url");
+  const { dirname, join } = await import("path");
+  const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+  const commandSrc = join(packageRoot, "commands", "init-memory.md");
+  const commandDest = ".claude/commands/init-memory.md";
+  if (exists(commandSrc)) {
+    if (!exists(".claude/commands")) {
+      mkdir(".claude/commands", { recursive: true });
+    }
+    if (exists(commandDest)) {
+      step("↷", "/init-memory Claude command already installed — skipped");
+    } else {
+      writeFileSync(commandDest, readFile(commandSrc, "utf-8"), "utf-8");
+      step("✓", "/init-memory Claude command installed at .claude/commands/init-memory.md");
+    }
+  }
+
   step("✓", "project-memory-mcp initialized successfully");
   process.stdout.write(
-    "\nNext: restart Claude Code to load the MCP server, then use add_decision, add_context, etc.\n"
+    "\nNext steps:\n" +
+    "  1. Restart Claude Code to load the MCP server\n" +
+    "  2. Run /init-memory to bootstrap memory from your git history\n"
   );
 }

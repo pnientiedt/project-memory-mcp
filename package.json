@@ -10,7 +10,8 @@
   },
   "files": [
     "dist/",
-    "hooks/"
+    "hooks/",
+    "commands/"
   ],
   "keywords": [
     "mcp",

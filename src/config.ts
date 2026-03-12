@@ -164,10 +164,14 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
 }
 
 function parseValue(val: string): unknown {
-  const v = val.trim().replace(/['"]/g, "");
+  const v = val.trim();
   if (v === "true") return true;
   if (v === "false") return false;
-  const num = Number(v);
-  if (!isNaN(num) && v !== "") return num;
-  return v;
+  if (v.startsWith("[")) {
+    try { return JSON.parse(v); } catch { /* fall through */ }
+  }
+  const unquoted = v.replace(/^['"]|['"]$/g, "");
+  const num = Number(unquoted);
+  if (!isNaN(num) && unquoted !== "") return num;
+  return unquoted;
 }
