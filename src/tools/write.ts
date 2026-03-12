@@ -59,9 +59,10 @@ export function registerWriteTools(
         severity: z.enum(["low", "medium", "high", "critical"]),
         affected_files: z.array(z.string()).optional().describe("Affected files"),
         ticket: z.string().optional().describe("Optional issue reference"),
+        upsert: z.boolean().optional().default(false).describe("If true, replace existing entry with same description title instead of appending"),
       },
     },
-    async ({ description, severity, affected_files, ticket }) => {
+    async ({ description, severity, affected_files, ticket, upsert }) => {
       const lines = [
         `## Tech Debt [${severity.toUpperCase()}]`,
         ``,
@@ -74,7 +75,9 @@ export function registerWriteTools(
         lines.push(`**Ticket:** ${ticket}`);
       }
       const entry = lines.join("\n");
-      const written = fileService.append("tech_debt", entry);
+      const written = upsert
+        ? fileService.upsert("tech_debt", `Tech Debt [${severity.toUpperCase()}]`, entry)
+        : fileService.append("tech_debt", entry);
       await autoEmbed("tech_debt", `Tech Debt [${severity}]`, entry);
       sessionManager?.recordActivity("log_tech_debt");
       return {
@@ -92,9 +95,10 @@ export function registerWriteTools(
         milestone: z.string().describe("Name of the milestone"),
         status: z.enum(["planned", "in-progress", "done", "blocked"]),
         description: z.string().optional().describe("Optional details"),
+        upsert: z.boolean().optional().default(false).describe("If true, replace existing entry with same milestone name instead of appending"),
       },
     },
-    async ({ milestone, status, description }) => {
+    async ({ milestone, status, description, upsert }) => {
       const statusEmoji: Record<string, string> = {
         planned: "📋",
         "in-progress": "🔄",
@@ -110,7 +114,9 @@ export function registerWriteTools(
         lines.push(``, description);
       }
       const entry = lines.join("\n");
-      const written = fileService.append("progress", entry);
+      const written = upsert
+        ? fileService.upsert("progress", milestone, entry)
+        : fileService.append("progress", entry);
       await autoEmbed("progress", milestone, entry);
       sessionManager?.recordActivity("update_progress");
       return {
@@ -127,12 +133,15 @@ export function registerWriteTools(
       inputSchema: {
         content: z.string().describe("Context to save"),
         category: z.string().optional().describe("Category tag (e.g. 'api', 'domain', 'convention')"),
+        upsert: z.boolean().optional().default(false).describe("If true, replace existing entry with same category instead of appending"),
       },
     },
-    async ({ content, category }) => {
+    async ({ content, category, upsert }) => {
       const header = category ? `## [${category}]` : "## Context";
       const entry = `${header}\n\n${content}`;
-      const written = fileService.append("context", entry);
+      const written = upsert
+        ? fileService.upsert("context", category ? `[${category}]` : "Context", entry)
+        : fileService.append("context", entry);
       await autoEmbed("context", category || "Context", entry);
       sessionManager?.recordActivity("add_context");
       return {

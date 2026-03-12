@@ -71,6 +71,44 @@ export class FileService {
   }
 
   /**
+   * Upsert an entry: replace the existing H2 section matching sectionTitle, or append if not found.
+   * Matching is case-insensitive and strips leading emoji characters for comparison.
+   * Returns the written entry text.
+   */
+  upsert(scope: MemoryScope, sectionTitle: string, entry: string): string {
+    const path = this.files[scope];
+    const existing = existsSync(path) ? readFileSync(path, "utf-8") : "";
+
+    const entryHash = hashContent(entry);
+    const dated = formatEntry(entry, entryHash);
+    const normalizedTarget = normalizeTitle(sectionTitle);
+
+    // Split file into: preamble (before first ##) and sections (each starting with ##)
+    const sectionPattern = /(?=^## )/m;
+    const parts = existing.split(sectionPattern);
+    const preamble = parts[0];
+    const sections = parts.slice(1);
+
+    const matchIndex = sections.findIndex(s => {
+      const header = s.split("\n")[0]; // e.g. "## 🔄 My Feature"
+      return normalizeTitle(header.replace(/^##\s*/, "")) === normalizedTarget;
+    });
+
+    if (matchIndex === -1) {
+      // Not found — fall back to append
+      const newContent = existing + (existing.endsWith("\n") ? "" : "\n") + dated + "\n";
+      this.atomicWrite(path, newContent);
+      return dated;
+    }
+
+    // Replace the matched section
+    sections[matchIndex] = dated + "\n";
+    const newContent = preamble + sections.join("");
+    this.atomicWrite(path, newContent);
+    return dated;
+  }
+
+  /**
    * Overwrite the full content of a memory file atomically.
    */
   write(scope: MemoryScope, content: string): void {
@@ -93,6 +131,11 @@ export class FileService {
     writeFileSync(tmp, content, { encoding: "utf-8", mode: 0o600 });
     renameSync(tmp, path);
   }
+}
+
+function normalizeTitle(title: string): string {
+  // Strip leading emoji (Unicode emoji + variation selectors + ZWJ sequences) and whitespace
+  return title.replace(/^[\p{Emoji}\uFE0E\uFE0F\u200D\s]+/u, "").trim().toLowerCase();
 }
 
 function hashContent(content: string): string {
