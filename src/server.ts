@@ -7,6 +7,7 @@ import { registerMemoryResources } from "./resources/memory.js";
 import { registerWriteTools } from "./tools/write.js";
 import { registerReadTools } from "./tools/read.js";
 import { registerAdminTools } from "./tools/admin.js";
+import { startGitHookServer } from "./triggers/git-hook.js";
 import type { ServerConfig } from "./types.js";
 
 export interface ProjectMemoryServer {
@@ -15,6 +16,7 @@ export interface ProjectMemoryServer {
   embeddingService: EmbeddingService;
   ollamaService: OllamaService;
   config: ServerConfig;
+  stopGitHook?: () => void;
 }
 
 export function createServer(configPath?: string): ProjectMemoryServer {
@@ -44,5 +46,17 @@ export function createServer(configPath?: string): ProjectMemoryServer {
   registerReadTools(mcp, fileService, embeddingService);
   registerAdminTools(mcp, fileService, embeddingService);
 
-  return { mcp, fileService, embeddingService, ollamaService, config };
+  let stopGitHook: (() => void) | undefined;
+  if (config.git.hook_enabled) {
+    const hookServer = startGitHookServer(
+      config.git.hook_port,
+      config.git.skip_keyword,
+      fileService,
+      ollamaService,
+      embeddingService,
+    );
+    stopGitHook = hookServer.close.bind(hookServer);
+  }
+
+  return { mcp, fileService, embeddingService, ollamaService, config, stopGitHook };
 }
