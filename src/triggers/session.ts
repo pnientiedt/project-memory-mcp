@@ -1,5 +1,6 @@
 import type { FileService } from "../services/file.js";
 import type { SessionConfig } from "../types.js";
+import { autoCommitMemory } from "../services/memory-commit.js";
 
 interface ToolCall {
   tool: string;
@@ -58,6 +59,7 @@ export class SessionManager {
 
     const summary = this.buildSummary(now, durationMin);
     this.fileService.append("progress", summary);
+    autoCommitMemory("[skip-memory]").catch(() => {});
   }
 
   private buildSummary(endTime: Date, durationMin: number): string {
