@@ -36,7 +36,7 @@ export function createServer(configPath?: string): ProjectMemoryServer {
   const sessionManager = new SessionManager(config.session, fileService);
 
   const mcp = new McpServer(
-    { name: "project-memory-mcp", version: "0.1.0" },
+    { name: "@pnientiedt/project-memory-mcp", version: "0.1.0" },
     {
       capabilities: {
         resources: {},

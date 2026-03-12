@@ -28,7 +28,7 @@ ollama pull llama3.2
 ### In a new project (recommended)
 
 ```bash
-npx project-memory-mcp init
+npx @pnientiedt/project-memory-mcp init
 ```
 
 This sets up everything automatically:
@@ -52,7 +52,7 @@ Register the MCP server in Claude Code (`.mcp.json` already pre-configured):
   "mcpServers": {
     "project-memory": {
       "command": "npx",
-      "args": ["project-memory-mcp"]
+      "args": ["@pnientiedt/project-memory-mcp"]
     }
   }
 }

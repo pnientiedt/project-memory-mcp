@@ -158,7 +158,7 @@ exit 0
   const mcpJsonPath = ".mcp.json";
   const mcpEntry = {
     command: "npx",
-    args: ["project-memory-mcp"],
+    args: ["@pnientiedt/project-memory-mcp"],
   };
   let mcpConfig: { mcpServers?: Record<string, unknown> } = {};
   if (exists(mcpJsonPath)) {
