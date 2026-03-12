@@ -1,4 +1,5 @@
 import { createServer as createHttpServer } from "http";
+import { simpleGit } from "simple-git";
 import type { FileService } from "../services/file.js";
 import type { OllamaService } from "../services/ollama.js";
 import type { EmbeddingService } from "../services/embedding.js";
@@ -63,9 +64,11 @@ async function handleGitEvent(
   const text = `${event.message}\n\n${event.diff}`;
   const summaries = await summarizeCommit(ollamaService, text, event.message);
 
+  let anyWritten = false;
   for (const [scope, summary] of Object.entries(summaries) as [MemoryScope, string | null][]) {
     if (!summary) continue;
     const written = fileService.append(scope, summary);
+    anyWritten = true;
 
     // Auto-embed the new entry (F-32)
     const sections = parseMarkdownSections(written, scope);
@@ -74,4 +77,25 @@ async function handleGitEvent(
       await embeddingService.embed(id, scope, section.section, section.content).catch(() => {});
     }
   }
+
+  // Auto-commit updated memory files so they're versioned alongside the triggering commit
+  // Use [skip-memory] to prevent the hook from re-triggering on this commit
+  if (anyWritten) {
+    await autoCommitMemory(skipKeyword).catch(() => {});
+  }
+}
+
+async function autoCommitMemory(skipKeyword: string): Promise<void> {
+  const git = simpleGit(".");
+  const status = await git.status();
+  const memoryFiles = status.files
+    .map((f) => f.path)
+    .filter((p) => p.startsWith(".project-memory/") && p.endsWith(".md"));
+
+  if (memoryFiles.length === 0) return;
+
+  await git.add(memoryFiles);
+  await git.commit(`chore: update project memory ${skipKeyword}`, memoryFiles, {
+    "--no-verify": null,
+  });
 }
