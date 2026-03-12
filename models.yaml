@@ -1,0 +1,38 @@
+# LLM Model Registry
+# Defines available models for Claude Code agent operations.
+# Override the default model by setting ANTHROPIC_MODEL environment variable.
+
+models:
+  default: claude-sonnet-4-20250514
+  alternatives:
+    - claude-opus-4-20250514
+    - claude-haiku-3-5-20241022
+
+# Model capability tiers
+tiers:
+  # High capability - for complex reasoning, architecture, and planning tasks
+  high:
+    model: claude-opus-4-20250514
+    use_for:
+      - complex refactoring
+      - architecture decisions
+      - security analysis
+      - epic planning
+
+  # Balanced - default for most tasks
+  balanced:
+    model: claude-sonnet-4-20250514
+    use_for:
+      - feature implementation
+      - bug fixing
+      - code review
+      - testing
+
+  # Fast - for lightweight, repetitive tasks
+  fast:
+    model: claude-haiku-3-5-20241022
+    use_for:
+      - simple edits
+      - formatting
+      - quick lookups
+      - status checks

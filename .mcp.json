@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    },
+    "gitlab-mcp": {
+      "command": "node",
+      "args": ["/Users/phillip.nientiedt/adesso-git/gitlab-mcp-server-mirror/dist/index.js"],
+      "env": {
+        "GITLAB_URL": "https://gitlab.adesso-group.com/",
+        "GITLAB_PROJECT_PATH": "Phillip.Nientiedt/scaile",
+        "GITLAB_ACCESS_TOKEN": "glpat-QVxtxtLsyLz33OYL3nV_l286MQp1Ojluagk.01.0z0tg30gh",
+        "NODE_ENV": "development",
+        "LOG_LEVEL": "INFO",
+        "LOG_DESTINATION": "/tmp/mcpserver.log"
+      },
+      "alwaysAllow": [
+        "list_tools",
+        "gitlab.get_project_name",
+        "gitlab.health_status",
+        "gitlab.issues.list",
+        "gitlab.issues.get",
+        "gitlab.issues.create",
+        "gitlab.issues.update",
+        "gitlab.issues.add_comment",
+        "gitlab.issues.link",
+        "add_comment",
+        "get_issue",
+        "find_issues",
+        "get_project_name",
+        "get_health_status",
+        "create_issue"
+      ],
+      "disabled": false,
+      "stdio": "inherit"
+    }
+  }
+}

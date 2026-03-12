@@ -1,0 +1,30 @@
+# Container Use Configuration
+# Configures container environments for Claude Code agent execution.
+# See: https://github.com/anthropics/container-use
+
+environments:
+  default:
+    image: ubuntu:24.04
+    setup:
+      - apt-get update -q
+      - apt-get install -y -q curl git jq
+
+  go:
+    image: golang:1.23-bookworm
+    setup:
+      - apt-get update -q
+      - apt-get install -y -q curl git jq
+      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+  node:
+    image: node:22-bookworm-slim
+    setup:
+      - apt-get update -q
+      - apt-get install -y -q curl git jq
+
+  python:
+    image: python:3.12-slim
+    setup:
+      - apt-get update -q
+      - apt-get install -y -q curl git jq
+      - pip install --quiet uv
