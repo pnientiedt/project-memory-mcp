@@ -4,6 +4,20 @@ This file tracks progress across Ralph Wiggum sessions. Each session appends ent
 
 ---
 
+## [2026-03-12] Ralph Loop — Epic pmm-sks COMPLETE
+
+**Epic:** Issue Tracker Integration in /init-project-memory
+**Status:** EPIC_COMPLETE — all 7 tasks closed
+
+### Key deliverables
+- `commands/init-project-memory.md` — Phase 4 added (Beads/GitHub/GitLab detect, fetch, write, report)
+- `src/services/file.ts` — `FileService.upsert()` with H2 section matching (emoji-tolerant, case-insensitive)
+- `src/tools/write.ts` — `upsert` boolean param on `update_progress`, `log_tech_debt`, `add_context`
+- 18 new tests (97 total, up from 79), all passing
+- Build clean, TypeScript strict
+
+---
+
 ## [2026-03-12 16:44:20] Headless Ralph
 Started headless loop. Target: EPIC_COMPLETE, Max iterations: 50
 
