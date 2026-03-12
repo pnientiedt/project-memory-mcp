@@ -51,8 +51,8 @@ Register the MCP server in Claude Code (`.mcp.json` already pre-configured):
 {
   "mcpServers": {
     "project-memory": {
-      "command": "node",
-      "args": ["./dist/index.js"]
+      "command": "npx",
+      "args": ["project-memory-mcp"]
     }
   }
 }

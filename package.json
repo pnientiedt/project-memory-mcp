@@ -25,9 +25,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/project-memory-mcp.git"
+    "url": "https://github.com/pnientiedt/project-memory-scp.git"
   },
-  "homepage": "https://github.com/your-org/project-memory-mcp#readme",
+  "homepage": "https://github.com/pnientiedt/project-memory-scp#readme",
   "publishConfig": {
     "access": "public"
   },
