@@ -10,7 +10,7 @@ import { registerAdminTools } from "./tools/admin.js";
 import { startGitHookServer } from "./triggers/git-hook.js";
 import { startWatcher } from "./triggers/watcher.js";
 import { SessionManager } from "./triggers/session.js";
-import type { ServerConfig } from "./types.js";
+import type { Logger, ServerConfig } from "./types.js";
 
 export interface ProjectMemoryServer {
   mcp: McpServer;
@@ -22,7 +22,7 @@ export interface ProjectMemoryServer {
   close: () => Promise<void>;
 }
 
-export function createServer(configPath?: string): ProjectMemoryServer {
+export function createServer(configPath?: string, logger?: Logger): ProjectMemoryServer {
   const config = loadConfig(configPath);
   const fileService = new FileService(config);
 
@@ -58,6 +58,7 @@ export function createServer(configPath?: string): ProjectMemoryServer {
       fileService,
       ollamaService,
       embeddingService,
+      logger,
     );
     stopGitHook = hookServer.close.bind(hookServer);
   }

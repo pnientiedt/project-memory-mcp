@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "./server.js";
-import { createWriteStream } from "fs";
-import { existsSync, mkdirSync } from "fs";
+import { loadConfig } from "./config.js";
+import { createWriteStream, existsSync, mkdirSync } from "fs";
 
 // Handle init subcommand: npx project-memory-mcp init
 if (process.argv[2] === "init") {
@@ -10,20 +10,22 @@ if (process.argv[2] === "init") {
   process.exit(0);
 }
 
-const server = createServer();
-const { mcp, config } = server;
-
-// Structured JSON logging to file (F-04)
-const logDir = config.memory.base_dir;
+// Load config before createServer so the logger can be passed in at construction time,
+// ensuring the git hook server logs events to server.log from the very first request.
+const cfg = loadConfig();
+const logDir = cfg.memory.base_dir;
 if (!existsSync(logDir)) {
   mkdirSync(logDir, { recursive: true });
 }
-const logStream = createWriteStream(config.logging.file, { flags: "a" });
+const logStream = createWriteStream(cfg.logging.file, { flags: "a" });
 
 function log(level: string, message: string, data?: unknown): void {
   const entry = JSON.stringify({ ts: new Date().toISOString(), level, message, ...(data ? { data } : {}) });
   logStream.write(entry + "\n");
 }
+
+const server = createServer(undefined, log);
+const { mcp } = server;
 
 // Graceful shutdown (F-05)
 const shutdown = () => {

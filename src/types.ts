@@ -85,3 +85,6 @@ export interface ProvisionResult {
   success: boolean;
   message: string;
 }
+
+/** Structured logger — matches the log() shape in index.ts */
+export type Logger = (level: string, message: string, data?: unknown) => void;

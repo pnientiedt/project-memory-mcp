@@ -5,7 +5,9 @@ import type { OllamaService } from "../services/ollama.js";
 import type { EmbeddingService } from "../services/embedding.js";
 import { summarizeCommit } from "../services/summarization.js";
 import { parseMarkdownSections, contentId } from "../services/embedding.js";
-import type { GitEvent, MemoryScope } from "../types.js";
+import type { GitEvent, Logger, MemoryScope } from "../types.js";
+
+const noop: Logger = () => {};
 
 export function startGitHookServer(
   port: number,
@@ -13,6 +15,7 @@ export function startGitHookServer(
   fileService: FileService,
   ollamaService: OllamaService,
   embeddingService: EmbeddingService,
+  logger: Logger = noop,
 ): { close: () => void } {
   const BODY_LIMIT = 1024 * 1024; // 1 MB
 
@@ -42,8 +45,9 @@ export function startGitHookServer(
       res.end(JSON.stringify({ ok: true }));
 
       // Process asynchronously
-      handleGitEvent(body, skipKeyword, fileService, ollamaService, embeddingService).catch((err: unknown) => {
+      handleGitEvent(body, skipKeyword, fileService, ollamaService, embeddingService, logger).catch((err: unknown) => {
         // Log but do not propagate (F-44)
+        logger("error", "git-event processing failed", { error: String(err) });
         process.stderr.write(`[project-memory] git-event error: ${String(err)}\n`);
       });
     });
@@ -51,13 +55,17 @@ export function startGitHookServer(
 
   server.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EADDRINUSE") {
+      logger("warn", "git hook port in use — hook integration disabled", { port });
       process.stderr.write(`[project-memory] Port ${port} already in use — git hook integration disabled\n`);
     } else {
+      logger("error", "git hook HTTP server error", { error: err.message });
       process.stderr.write(`[project-memory] HTTP server error: ${err.message}\n`);
     }
   });
 
-  server.listen(port, "127.0.0.1");
+  server.listen(port, "127.0.0.1", () => {
+    logger("info", "git hook server listening", { port });
+  });
   return {
     close: () => server.close(),
   };
@@ -69,6 +77,7 @@ async function handleGitEvent(
   fileService: FileService,
   ollamaService: OllamaService,
   embeddingService: EmbeddingService,
+  logger: Logger,
 ): Promise<void> {
   let event: GitEvent;
   try {
@@ -84,6 +93,8 @@ async function handleGitEvent(
   // Skip if message contains skip keyword (F-42)
   if (event.message.includes(skipKeyword)) return;
 
+  logger("info", "git-event received", { message: event.message, files: event.changed_files?.length ?? 0 });
+
   const diff = typeof event.diff === "string" ? event.diff : "";
   const text = `${event.message}\n\n${diff}`;
   const summaries = await summarizeCommit(ollamaService, text, event.message);
@@ -93,6 +104,7 @@ async function handleGitEvent(
     if (!summary) continue;
     const written = fileService.append(scope, summary);
     anyWritten = true;
+    logger("info", "memory updated", { scope });
 
     // Auto-embed the new entry (F-32)
     const sections = parseMarkdownSections(written, scope);
@@ -105,9 +117,13 @@ async function handleGitEvent(
   // Auto-commit updated memory files so they're versioned alongside the triggering commit
   // Use [skip-memory] to prevent the hook from re-triggering on this commit
   if (anyWritten) {
-    await autoCommitMemory(skipKeyword).catch((err: unknown) => {
-      process.stderr.write(`[project-memory] git-hook auto-commit failed: ${String(err)}\n`);
-    });
+    await autoCommitMemory(skipKeyword)
+      .then(() => logger("info", "memory files auto-committed"))
+      .catch((err: unknown) => {
+        logger("error", "auto-commit failed", { error: String(err) });
+        process.stderr.write(`[project-memory] git-hook auto-commit failed: ${String(err)}\n`);
+      });
+  } else {
+    logger("info", "git-event processed — no memory changes", { message: event.message });
   }
 }
-
