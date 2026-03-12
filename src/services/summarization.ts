@@ -40,12 +40,18 @@ Output format (Markdown):
 
 Diff and commit message:`,
 
-  context: `You are a technical writer. Extract relevant domain knowledge, conventions, or context from the following content.
+  context: `You are a technical writer. Extract NEW domain knowledge, architectural conventions, or non-obvious technical context from the following file content that would be useful for a future AI assistant working on this project.
+
+Only extract information that is NOT already obvious from reading the file itself — focus on decisions, constraints, patterns, and conventions that explain WHY things are done a certain way.
+
+Do NOT summarize or restate the file content. Do NOT describe what the file does.
 
 Output format (Markdown):
 ## [Category]
 
 [Extracted knowledge as clear, reusable text]
+
+If there is no new domain knowledge to extract (e.g. the file is documentation, a README, or contains only already-obvious information), respond with: NO CONTEXT FOUND
 
 Content:`,
 };

@@ -81,6 +81,8 @@ async function processFile(
   const relPath = relative(process.cwd(), filePath);
   const summary = await summarizeForScope(ollamaService, `File: ${relPath}\n\n${content}`, "context");
 
+  if (summary.includes("NO CONTEXT FOUND")) return;
+
   const written = fileService.append("context", summary);
 
   // Auto-embed
