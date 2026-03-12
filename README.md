@@ -63,10 +63,10 @@ Register the MCP server in Claude Code (`.mcp.json` already pre-configured):
 After startup Claude reads the memory files automatically. New entries are written via tools:
 
 ```
-add_decision    — Save an architectural decision (ADR format)
-log_tech_debt   — Record technical debt
-update_progress — Update a milestone
-add_context     — Save domain knowledge / conventions
+add_decision    — Save an architectural decision (ADR format); upsert=true to replace existing
+log_tech_debt   — Record technical debt; upsert=true to replace existing
+update_progress — Update a milestone; upsert=true to replace existing
+add_context     — Save domain knowledge / conventions; upsert=true to replace existing
 get_memory      — Read a memory file directly
 search_memory   — Semantic search across the knowledge base
 reindex_memory  — Rebuild the embedding index
@@ -125,7 +125,7 @@ Located in `.project-memory/` and versioned in git (except `embeddings.db` and `
 ## Development
 
 ```bash
-npm test              # Run tests (79 tests)
+npm test              # Run tests (101 tests)
 npm run test:coverage # Coverage report (83% line coverage)
 npm run build         # Compile TypeScript
 npm run typecheck     # Type check only
