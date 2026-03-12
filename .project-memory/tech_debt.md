@@ -2,17 +2,10 @@
 
 This file tracks known technical debt and issues.
 
-<!-- date:2026-03-12 hash:td001 -->
-## Tech Debt [MEDIUM]
-
-Custom minimal YAML parser in `src/config.ts` (parseSimpleYaml). A comment in the source explicitly notes "For production use, replace with a proper YAML library." The parser handles flat key-value pairs and basic arrays but will silently misparse complex YAML (multi-line strings, nested arrays, anchors).
-
-**Affected Files:** src/config.ts
-
 <!-- date:2026-03-12 hash:td002 -->
-## Tech Debt [MEDIUM]
+## Tech Debt [LOW]
 
-Git hook port (47832) is hardcoded in the shell script written by `init`. The port is configurable via `PMM_HOOK_PORT` env var for the MCP server, but the already-installed `.git/hooks/post-commit` script always targets port 47832. Changing `hook_port` in config.yaml after `init` has no effect on the hook — user must manually reinstall.
+`hook_port` in config.yaml does not auto-sync to the installed hook. The hook reads `PMM_HOOK_PORT` at runtime (defaulting to 47832), so users can override via env var without reinstalling. However, changing `hook_port` in config.yaml alone has no effect — users must also set `PMM_HOOK_PORT` in their shell. The config comment documents this but the coupling is confusing.
 
 **Affected Files:** src/index.ts (init function), hooks/post-commit
 
@@ -28,12 +21,6 @@ Git hook port (47832) is hardcoded in the shell script written by `init`. The po
 Windows native git hooks not supported
 
 **Affected Files:** hooks/post-commit
-<!-- date:2026-03-12 hash:af26f7469647 -->
-## Tech Debt [MEDIUM]
-
-Hook port conflict silently swallowed — if port 47832 is already in use (EADDRINUSE), the git hook integration fails silently; commit still succeeds but no memory update occurs. An EADDRINUSE handler was added but there is no user-visible warning when this happens.
-
-**Affected Files:** src/triggers/git-hook.ts, hooks/post-commit
 <!-- date:2026-03-12 hash:4747a16cadaa -->
 ## Tech Debt [LOW]
 
