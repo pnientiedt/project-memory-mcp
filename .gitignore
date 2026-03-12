@@ -9,3 +9,9 @@
 
 # Claude Code logs
 .claude/logs/
+node_modules
+dist/
+
+# project-memory-mcp: keep *.md, ignore db and logs
+.project-memory/embeddings.db
+.project-memory/server.log
