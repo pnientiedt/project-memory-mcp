@@ -33,7 +33,7 @@ export function createServer(configPath?: string): ProjectMemoryServer {
     config.embeddings.model,
   );
   const ollamaService = new OllamaService(config.ollama);
-  const sessionManager = new SessionManager(config.session, fileService);
+  const sessionManager = new SessionManager(config.session, fileService, config.git.skip_keyword);
 
   const mcp = new McpServer(
     { name: "@pnientiedt/project-memory-mcp", version: "0.1.0" },

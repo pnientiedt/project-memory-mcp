@@ -1,5 +1,5 @@
 import chokidar from "chokidar";
-import { resolve, relative } from "path";
+import { resolve, relative, dirname } from "path";
 import { readFileSync } from "fs";
 import type { OllamaService } from "../services/ollama.js";
 import type { FileService } from "../services/file.js";
@@ -15,7 +15,7 @@ export function startWatcher(
   embeddingService: EmbeddingService,
 ): { close: () => Promise<void> } {
   const baseDir = resolve(process.cwd());
-  const memoryDir = resolve(fileService.getPath("context")).replace(/\/[^/]+$/, "");
+  const memoryDir = dirname(resolve(fileService.getPath("context")));
   const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   const watcher = chokidar.watch(config.paths, {
@@ -32,21 +32,23 @@ export function startWatcher(
   });
 
   const handleChange = (filePath: string) => {
-    // Path traversal protection
+    // Path traversal protection — use resolved path consistently
     const abs = resolve(filePath);
     if (!abs.startsWith(baseDir)) return;
 
-    // Clear existing debounce for this file
-    const existing = debounceTimers.get(filePath);
+    // Clear existing debounce for this file (keyed on resolved path)
+    const existing = debounceTimers.get(abs);
     if (existing) clearTimeout(existing);
 
     // Debounce: wait for last change before processing (F-61)
-    const timer = setTimeout(async () => {
-      debounceTimers.delete(filePath);
-      await processFile(filePath, fileService, ollamaService, embeddingService);
+    const timer = setTimeout(() => {
+      debounceTimers.delete(abs);
+      processFile(abs, fileService, ollamaService, embeddingService).catch((err: unknown) => {
+        process.stderr.write(`[project-memory] watcher error for ${abs}: ${String(err)}\n`);
+      });
     }, config.debounce_ms);
 
-    debounceTimers.set(filePath, timer);
+    debounceTimers.set(abs, timer);
   };
 
   watcher.on("change", handleChange);

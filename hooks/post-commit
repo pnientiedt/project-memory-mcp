@@ -22,18 +22,20 @@ CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | tr '\n' ',' | sed
 TIMESTAMP=$(date +%s 2>/dev/null || echo "0")
 
 # Encode to JSON safely using python3 (available on macOS/Linux)
+# Pass shell vars via environment to avoid interpolation into Python source
 if command -v python3 >/dev/null 2>&1; then
-  PAYLOAD=$(python3 -c "
-import json, sys
+  PAYLOAD=$(CHANGED_FILES="$CHANGED_FILES" TIMESTAMP="$TIMESTAMP" python3 -c "
+import json, sys, os
 msg = sys.stdin.readline().rstrip('\n')
 diff = sys.stdin.read()
-files = '$CHANGED_FILES'.split(',') if '$CHANGED_FILES' else []
+files_str = os.environ.get('CHANGED_FILES', '')
+files = [f for f in files_str.split(',') if f] if files_str else []
 print(json.dumps({
     'event': 'post-commit',
     'message': msg,
     'diff': diff,
-    'changed_files': [f for f in files if f],
-    'timestamp': int('$TIMESTAMP')
+    'changed_files': files,
+    'timestamp': int(os.environ.get('TIMESTAMP', '0'))
 }))
 " <<EOF
 $COMMIT_MSG

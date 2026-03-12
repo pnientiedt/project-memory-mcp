@@ -14,6 +14,8 @@ export function startGitHookServer(
   ollamaService: OllamaService,
   embeddingService: EmbeddingService,
 ): { close: () => void } {
+  const BODY_LIMIT = 1024 * 1024; // 1 MB
+
   const server = createHttpServer((req, res) => {
     if (req.method !== "POST" || req.url !== "/internal/git-event") {
       res.writeHead(404);
@@ -22,20 +24,40 @@ export function startGitHookServer(
     }
 
     let body = "";
-    req.on("data", (chunk: Buffer) => { body += chunk.toString(); });
+    let bodySize = 0;
+    req.on("data", (chunk: Buffer) => {
+      bodySize += chunk.length;
+      if (bodySize > BODY_LIMIT) {
+        res.writeHead(413, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Payload too large" }));
+        req.destroy();
+        return;
+      }
+      body += chunk.toString();
+    });
     req.on("end", () => {
+      if (res.headersSent) return;
       // Respond immediately — async processing must not block commit (F-43)
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true }));
 
       // Process asynchronously
-      handleGitEvent(body, skipKeyword, fileService, ollamaService, embeddingService).catch(() => {
-        // Errors logged but never propagate (F-44)
+      handleGitEvent(body, skipKeyword, fileService, ollamaService, embeddingService).catch((err: unknown) => {
+        // Log but do not propagate (F-44)
+        process.stderr.write(`[project-memory] git-event error: ${String(err)}\n`);
       });
     });
   });
 
-  server.listen(port);
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      process.stderr.write(`[project-memory] Port ${port} already in use — git hook integration disabled\n`);
+    } else {
+      process.stderr.write(`[project-memory] HTTP server error: ${err.message}\n`);
+    }
+  });
+
+  server.listen(port, "127.0.0.1");
   return {
     close: () => server.close(),
   };
@@ -55,13 +77,15 @@ async function handleGitEvent(
     return; // Invalid JSON — ignore
   }
 
-  // Validate required fields
-  if (!event.message || !event.event) return;
+  // Validate required fields with type guards
+  if (typeof event.event !== "string" || typeof event.message !== "string") return;
+  if (!event.event || !event.message) return;
 
   // Skip if message contains skip keyword (F-42)
   if (event.message.includes(skipKeyword)) return;
 
-  const text = `${event.message}\n\n${event.diff}`;
+  const diff = typeof event.diff === "string" ? event.diff : "";
+  const text = `${event.message}\n\n${diff}`;
   const summaries = await summarizeCommit(ollamaService, text, event.message);
 
   let anyWritten = false;

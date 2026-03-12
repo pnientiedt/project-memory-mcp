@@ -52,13 +52,21 @@ async function runInit(): Promise<void> {
     mkdirSync: mkdir,
   } = await import("fs");
   const { spawn } = await import("child_process");
-  const { createServer: create } = await import("./server.js");
+  const { fileURLToPath } = await import("url");
+  const { dirname, join } = await import("path");
 
   const step = (symbol: string, msg: string) =>
     process.stdout.write(`${symbol} ${msg}\n`);
 
+  // Compute package root early — used for hooks and commands below
+  const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+
   // Step 1: Initialize .project-memory/ directory and default memory files
-  create();
+  // Use FileService directly to avoid leaking HTTP server / watcher / SQLite handles
+  const { loadConfig } = await import("./config.js");
+  const { FileService } = await import("./services/file.js");
+  const cfg = loadConfig();
+  new FileService(cfg).initializeDirectory();
   step("✓", ".project-memory/ initialized");
 
   // Step 2: Write config.yaml with fully commented defaults (F-95)
@@ -113,25 +121,11 @@ session:
 
   // Step 3: Install git post-commit hook (F-40)
   const hookPath = ".git/hooks/post-commit";
-  const hookScript = `#!/bin/sh
-# project-memory-mcp post-commit hook
-# Sends commit info to MCP server for memory update
-
-COMMIT_MSG=$(git log -1 --pretty=%B)
-DIFF=$(git diff HEAD~1 HEAD --stat 2>/dev/null || echo "")
-CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | tr '\\n' ',' | sed 's/,$//')
-TIMESTAMP=$(date +%s)
-
-# Skip if [skip-memory] in commit message
-echo "$COMMIT_MSG" | grep -q "\\[skip-memory\\]" && exit 0
-
-# Send async to MCP server internal endpoint
-curl -s -X POST http://localhost:47832/internal/git-event \\
-  -H "Content-Type: application/json" \\
-  -d "{\\"event\\":\\"post-commit\\",\\"message\\":$(echo "$COMMIT_MSG" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'),\\"diff\\":$(echo "$DIFF" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'),\\"changed_files\\":[\\"$CHANGED\\"],\\"timestamp\\":$TIMESTAMP}" &
-
-exit 0
-`;
+  // Copy canonical hook from package — avoids dual-maintenance and JSON injection
+  const hookSrc = join(packageRoot, "hooks", "post-commit");
+  const hookScript = exists(hookSrc)
+    ? readFile(hookSrc, "utf-8")
+    : "#!/bin/sh\n# project-memory-mcp post-commit hook\nexit 0\n";
 
   if (exists(".git")) {
     if (!exists(".git/hooks")) {
@@ -202,17 +196,19 @@ exit 0
   }
 
   // Step 6: Pull Ollama model if Ollama is available (F-99)
+  const ollamaUrl = cfg.ollama.base_url;
+  const ollamaModel = cfg.ollama.model;
   try {
-    const res = await fetch("http://localhost:11434/api/tags", {
+    const res = await fetch(`${ollamaUrl}/api/tags`, {
       signal: AbortSignal.timeout(3000),
     });
     if (res.ok) {
-      step("✓", "Ollama is available — pulling llama3.2 model...");
+      step("✓", `Ollama is available — pulling ${ollamaModel} model...`);
       await new Promise<void>((resolve) => {
-        const proc = spawn("ollama", ["pull", "llama3.2"], { stdio: "inherit" });
+        const proc = spawn("ollama", ["pull", ollamaModel], { stdio: "inherit" });
         proc.on("close", (code) => {
           if (code === 0) {
-            step("✓", "ollama pull llama3.2 complete");
+            step("✓", `ollama pull ${ollamaModel} complete`);
           } else {
             step("!", `ollama pull exited with code ${code} — continuing`);
           }
@@ -225,13 +221,10 @@ exit 0
       });
     }
   } catch {
-    step("↷", "Ollama not running — skipping model pull (run 'ollama pull llama3.2' later)");
+    step("↷", `Ollama not running — skipping model pull (run 'ollama pull ${ollamaModel}' later)`);
   }
 
   // Step 7: Install /init-memory Claude slash command
-  const { fileURLToPath } = await import("url");
-  const { dirname, join } = await import("path");
-  const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
   const commandSrc = join(packageRoot, "commands", "init-project-memory.md");
   const commandDest = ".claude/commands/init-project-memory.md";
   if (exists(commandSrc)) {

@@ -90,7 +90,7 @@ export class FileService {
    */
   private atomicWrite(path: string, content: string): void {
     const tmp = `${path}.${randomBytes(6).toString("hex")}.tmp`;
-    writeFileSync(tmp, content, "utf-8");
+    writeFileSync(tmp, content, { encoding: "utf-8", mode: 0o600 });
     renameSync(tmp, path);
   }
 }

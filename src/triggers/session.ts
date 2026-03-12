@@ -10,16 +10,19 @@ interface ToolCall {
 export class SessionManager {
   private config: SessionConfig;
   private fileService: FileService;
+  private skipKeyword: string;
   private sessionStart: Date;
   private lastActivity: Date;
   private toolCalls: ToolCall[] = [];
   private inactivityTimer: ReturnType<typeof setTimeout> | null = null;
   private changedFiles = new Set<string>();
   private decisions: string[] = [];
+  private sessionEnded = false;
 
-  constructor(config: SessionConfig, fileService: FileService) {
+  constructor(config: SessionConfig, fileService: FileService, skipKeyword = "[skip-memory]") {
     this.config = config;
     this.fileService = fileService;
+    this.skipKeyword = skipKeyword;
     this.sessionStart = new Date();
     this.lastActivity = new Date();
     this.resetTimer();
@@ -53,7 +56,9 @@ export class SessionManager {
    * Generate and write session summary when session ends (F-51, F-52).
    */
   private onSessionEnd(): void {
+    if (this.sessionEnded) return; // guard against timer/close() race
     if (this.toolCalls.length === 0) return; // skip probe-only sessions
+    this.sessionEnded = true;
 
     const now = new Date();
     const durationMs = now.getTime() - this.sessionStart.getTime();
@@ -61,7 +66,7 @@ export class SessionManager {
 
     const summary = this.buildSummary(now, durationMin);
     this.fileService.append("progress", summary);
-    autoCommitMemory("[skip-memory]").catch(() => {});
+    autoCommitMemory(this.skipKeyword).catch(() => {});
   }
 
   private buildSummary(endTime: Date, durationMin: number): string {

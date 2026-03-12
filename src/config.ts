@@ -1,4 +1,5 @@
 import { readFileSync, existsSync } from "fs";
+import { load as yamlLoad } from "js-yaml";
 import { z } from "zod";
 import type { ServerConfig } from "./types.js";
 
@@ -87,11 +88,12 @@ export function loadConfig(configPath = ".project-memory/config.yaml"): ServerCo
   if (existsSync(configPath)) {
     try {
       const content = readFileSync(configPath, "utf-8");
-      // Simple YAML parser for our known schema — uses JSON-like structure via zod defaults
-      // Full YAML parsing would require a dependency; we parse known keys manually
-      rawConfig = parseSimpleYaml(content);
-    } catch {
-      // Config parse error — use defaults
+      const parsed = yamlLoad(content);
+      if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+        rawConfig = parsed as Record<string, unknown>;
+      }
+    } catch (err) {
+      process.stderr.write(`[project-memory] Failed to parse ${configPath}: ${String(err)} — using defaults\n`);
     }
   }
 
@@ -105,73 +107,4 @@ export function loadConfig(configPath = ".project-memory/config.yaml"): ServerCo
   return result.data;
 }
 
-/**
- * Minimal YAML parser for our config schema.
- * Handles nested key: value pairs and arrays.
- * For production use, replace with a proper YAML library.
- */
-function parseSimpleYaml(content: string): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  const lines = content.split("\n");
-  let currentSection: string | null = null;
-  let currentObj: Record<string, unknown> = {};
 
-  for (const line of lines) {
-    // Skip comments and empty lines
-    if (line.trim().startsWith("#") || line.trim() === "") continue;
-
-    const indentLevel = line.match(/^(\s*)/)?.[1].length ?? 0;
-
-    if (indentLevel === 0) {
-      // Top-level key
-      if (currentSection) {
-        result[currentSection] = currentObj;
-      }
-      const match = line.match(/^(\w+):\s*(.*)/);
-      if (match) {
-        currentSection = match[1];
-        currentObj = {};
-        if (match[2]) {
-          // Inline value at top level
-          result[currentSection] = parseValue(match[2]);
-          currentSection = null;
-        }
-      }
-    } else if (indentLevel >= 2 && currentSection) {
-      // Nested key-value
-      const match = line.trim().match(/^(\w+):\s*(.*)/);
-      if (match) {
-        currentObj[match[1]] = match[2] ? parseValue(match[2]) : {};
-      } else if (line.trim().startsWith("- ")) {
-        // Array item — simplified: attach to last key
-        const val = line.trim().slice(2).replace(/['"]/g, "");
-        const lastKey = Object.keys(currentObj).at(-1);
-        if (lastKey) {
-          if (!Array.isArray(currentObj[lastKey])) {
-            currentObj[lastKey] = [];
-          }
-          (currentObj[lastKey] as string[]).push(val);
-        }
-      }
-    }
-  }
-
-  if (currentSection) {
-    result[currentSection] = currentObj;
-  }
-
-  return result;
-}
-
-function parseValue(val: string): unknown {
-  const v = val.trim();
-  if (v === "true") return true;
-  if (v === "false") return false;
-  if (v.startsWith("[")) {
-    try { return JSON.parse(v); } catch { /* fall through */ }
-  }
-  const unquoted = v.replace(/^['"]|['"]$/g, "");
-  const num = Number(unquoted);
-  if (!isNaN(num) && unquoted !== "") return num;
-  return unquoted;
-}
