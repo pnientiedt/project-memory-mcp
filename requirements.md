@@ -267,8 +267,10 @@ sequenceDiagram
 
 ### Projektstruktur
 
+Das Projekt wird direkt im Repository-Root erstellt (kein Unterordner `project-memory-mcp/`).
+
 ```
-project-memory-mcp/
+./                            # Repository-Root (scaile/)
 ├── src/
 │   ├── index.ts              # Einstiegspunkt, MCP Server Setup
 │   ├── server.ts             # MCP Server Konfiguration
