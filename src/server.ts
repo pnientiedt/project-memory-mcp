@@ -64,7 +64,7 @@ export function createServer(configPath?: string): ProjectMemoryServer {
 
   let stopWatcher: (() => Promise<void>) | undefined;
   if (config.watcher.enabled) {
-    const watcherHandle = startWatcher(config.watcher, fileService, ollamaService, embeddingService);
+    const watcherHandle = startWatcher(config.watcher, fileService, ollamaService, embeddingService, config.git.skip_keyword);
     stopWatcher = watcherHandle.close.bind(watcherHandle);
   }
 

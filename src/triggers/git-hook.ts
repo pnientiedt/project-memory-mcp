@@ -105,7 +105,9 @@ async function handleGitEvent(
   // Auto-commit updated memory files so they're versioned alongside the triggering commit
   // Use [skip-memory] to prevent the hook from re-triggering on this commit
   if (anyWritten) {
-    await autoCommitMemory(skipKeyword).catch(() => {});
+    await autoCommitMemory(skipKeyword).catch((err: unknown) => {
+      process.stderr.write(`[project-memory] git-hook auto-commit failed: ${String(err)}\n`);
+    });
   }
 }
 

@@ -6,6 +6,7 @@ import type { FileService } from "../services/file.js";
 import type { EmbeddingService } from "../services/embedding.js";
 import { parseMarkdownSections, contentId } from "../services/embedding.js";
 import { summarizeForScope } from "../services/summarization.js";
+import { autoCommitMemory } from "../services/memory-commit.js";
 import type { WatcherConfig } from "../types.js";
 
 export function startWatcher(
@@ -13,6 +14,7 @@ export function startWatcher(
   fileService: FileService,
   ollamaService: OllamaService,
   embeddingService: EmbeddingService,
+  skipKeyword = "[skip-memory]",
 ): { close: () => Promise<void> } {
   const baseDir = resolve(process.cwd());
   const memoryDir = dirname(resolve(fileService.getPath("context")));
@@ -43,7 +45,7 @@ export function startWatcher(
     // Debounce: wait for last change before processing (F-61)
     const timer = setTimeout(() => {
       debounceTimers.delete(abs);
-      processFile(abs, fileService, ollamaService, embeddingService).catch((err: unknown) => {
+      processFile(abs, fileService, ollamaService, embeddingService, skipKeyword).catch((err: unknown) => {
         process.stderr.write(`[project-memory] watcher error for ${abs}: ${String(err)}\n`);
       });
     }, config.debounce_ms);
@@ -67,6 +69,7 @@ async function processFile(
   fileService: FileService,
   ollamaService: OllamaService,
   embeddingService: EmbeddingService,
+  skipKeyword: string,
 ): Promise<void> {
   let content: string;
   try {
@@ -86,4 +89,9 @@ async function processFile(
     const id = contentId("context", section.section, section.content);
     await embeddingService.embed(id, "context", section.section, section.content).catch(() => {});
   }
+
+  // Auto-commit updated memory file (F-61)
+  await autoCommitMemory(skipKeyword).catch((err: unknown) => {
+    process.stderr.write(`[project-memory] watcher auto-commit failed for ${relPath}: ${String(err)}\n`);
+  });
 }

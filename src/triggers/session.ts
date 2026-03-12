@@ -66,7 +66,9 @@ export class SessionManager {
 
     const summary = this.buildSummary(now, durationMin);
     this.fileService.append("progress", summary);
-    autoCommitMemory(this.skipKeyword).catch(() => {});
+    autoCommitMemory(this.skipKeyword).catch((err: unknown) => {
+      process.stderr.write(`[project-memory] session auto-commit failed: ${String(err)}\n`);
+    });
   }
 
   private buildSummary(endTime: Date, durationMin: number): string {
