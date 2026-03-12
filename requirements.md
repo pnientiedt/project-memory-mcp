@@ -43,12 +43,12 @@ wiederholten Erklärungen über lange Entwicklungszeiträume.
 
 ### Erfolgskriterien (Definition of Done)
 
-- [ ] MCP Server startet und registriert sich erfolgreich in Claude Code
-- [ ] Nach einem Git-Commit wird die Memory automatisch aktualisiert (< 30s)
-- [ ] Claude kann via MCP Resource die Wissensbasis ohne explizite Anfrage einlesen
-- [ ] Semantische Suche liefert relevante Treffer mit cosine similarity > 0.7
-- [ ] Vollständig offline nutzbar (kein Cloud-API-Key erforderlich)
-- [ ] Konfiguration per `.project-memory/config.yaml` möglich
+- [x] MCP Server startet und registriert sich erfolgreich in Claude Code
+- [x] Nach einem Git-Commit wird die Memory automatisch aktualisiert (< 30s)
+- [x] Claude kann via MCP Resource die Wissensbasis ohne explizite Anfrage einlesen
+- [x] Semantische Suche liefert relevante Treffer mit cosine similarity > 0.7
+- [x] Vollständig offline nutzbar (kein Cloud-API-Key erforderlich)
+- [x] Konfiguration per `.project-memory/config.yaml` möglich
 
 ### Out of Scope
 
