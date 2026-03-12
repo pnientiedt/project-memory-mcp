@@ -7,7 +7,7 @@ Stores architectural decisions, technical debt, project progress, and domain kno
 ## Features
 
 - **4 MCP Resources** — Claude reads `memory://decisions`, `memory://tech-debt`, `memory://progress`, `memory://context` automatically at session start
-- **5 MCP Tools** — `add_decision`, `log_tech_debt`, `update_progress`, `add_context`, `search_memory`, `reindex_memory`
+- **7 MCP Tools** — `add_decision`, `log_tech_debt`, `update_progress`, `add_context`, `get_memory`, `search_memory`, `reindex_memory`
 - **Semantic Search** — Embedding-based search via `@huggingface/transformers` (all-MiniLM-L6-v2) stored locally in SQLite
 - **Git Hook** — Post-commit hook sends diff + message to Ollama for automatic summarization and auto-commits the updated memory files
 - **Filesystem Watcher** — Changes to `CLAUDE.md`, `docs/adr/`, etc. trigger memory updates
@@ -67,6 +67,7 @@ add_decision    — Save an architectural decision (ADR format)
 log_tech_debt   — Record technical debt
 update_progress — Update a milestone
 add_context     — Save domain knowledge / conventions
+get_memory      — Read a memory file directly
 search_memory   — Semantic search across the knowledge base
 reindex_memory  — Rebuild the embedding index
 ```
