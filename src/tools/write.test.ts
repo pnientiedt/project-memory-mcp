@@ -148,4 +148,71 @@ describe("Write Tools", () => {
       expect(content).toContain("Some freeform context");
     });
   });
+
+  describe("upsert parameter", () => {
+    describe("update_progress upsert", () => {
+      it("upsert=false (default) appends duplicates", async () => {
+        await mockServer.callTool("update_progress", { milestone: "Feature X", status: "planned" });
+        await mockServer.callTool("update_progress", { milestone: "Feature X", status: "in-progress" });
+        const content = fileService.read("progress");
+        expect((content.match(/Feature X/g) || []).length).toBeGreaterThan(1);
+      });
+
+      it("upsert=true replaces existing milestone entry", async () => {
+        await mockServer.callTool("update_progress", { milestone: "Feature X", status: "planned", upsert: true });
+        await mockServer.callTool("update_progress", { milestone: "Feature X", status: "in-progress", upsert: true });
+        const content = fileService.read("progress");
+        expect((content.match(/Feature X/g) || []).length).toBe(1);
+        expect(content).toContain("in-progress");
+        expect(content).not.toContain("planned");
+      });
+
+      it("upsert=true appends when no existing entry", async () => {
+        await mockServer.callTool("update_progress", { milestone: "New Feature", status: "planned", upsert: true });
+        expect(fileService.read("progress")).toContain("New Feature");
+      });
+
+      it("upsert=true matches milestone with emoji prefix", async () => {
+        await mockServer.callTool("update_progress", { milestone: "Epic Task", status: "planned", upsert: false });
+        await mockServer.callTool("update_progress", { milestone: "Epic Task", status: "done", upsert: true });
+        const content = fileService.read("progress");
+        expect((content.match(/Epic Task/g) || []).length).toBe(1);
+        expect(content).toContain("done");
+      });
+    });
+
+    describe("log_tech_debt upsert", () => {
+      it("upsert=false (default) appends duplicates", async () => {
+        await mockServer.callTool("log_tech_debt", { description: "Missing tests", severity: "medium" });
+        await mockServer.callTool("log_tech_debt", { description: "Missing tests", severity: "high" });
+        const content = fileService.read("tech_debt");
+        expect((content.match(/Missing tests/g) || []).length).toBeGreaterThan(1);
+      });
+
+      it("upsert=true replaces entry with same severity header", async () => {
+        await mockServer.callTool("log_tech_debt", { description: "Auth missing", severity: "high", upsert: true });
+        await mockServer.callTool("log_tech_debt", { description: "Auth missing — now with detail", severity: "high", upsert: true });
+        const content = fileService.read("tech_debt");
+        expect(content).toContain("now with detail");
+      });
+    });
+
+    describe("add_context upsert", () => {
+      it("upsert=false (default) appends duplicates", async () => {
+        await mockServer.callTool("add_context", { content: "v1", category: "stack" });
+        await mockServer.callTool("add_context", { content: "v2", category: "stack" });
+        const content = fileService.read("context");
+        expect((content.match(/\[stack\]/g) || []).length).toBeGreaterThan(1);
+      });
+
+      it("upsert=true replaces existing category entry", async () => {
+        await mockServer.callTool("add_context", { content: "Old stack info", category: "stack", upsert: true });
+        await mockServer.callTool("add_context", { content: "New stack info", category: "stack", upsert: true });
+        const content = fileService.read("context");
+        expect((content.match(/\[stack\]/g) || []).length).toBe(1);
+        expect(content).toContain("New stack info");
+        expect(content).not.toContain("Old stack info");
+      });
+    });
+  });
 });

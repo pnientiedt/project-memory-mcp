@@ -120,4 +120,88 @@ describe("FileService", () => {
       expect(service.read("context")).toBe("# New Content\n");
     });
   });
+
+  describe("upsert()", () => {
+    beforeEach(() => service.initializeDirectory());
+
+    it("appends when no matching section exists", () => {
+      service.upsert("decisions", "New Decision", "## New Decision\n\nContent");
+      const content = service.read("decisions");
+      expect(content).toContain("## New Decision");
+    });
+
+    it("replaces exact matching H2 section", () => {
+      service.append("progress", "## My Feature\n\nOld content");
+      service.upsert("progress", "My Feature", "## My Feature\n\nNew content");
+      const content = service.read("progress");
+      expect(content).toContain("New content");
+      expect(content).not.toContain("Old content");
+      expect((content.match(/## My Feature/g) || []).length).toBe(1);
+    });
+
+    it("matches section with emoji prefix", () => {
+      service.append("progress", "## 🔄 My Feature\n\nOld content");
+      service.upsert("progress", "My Feature", "## 🔄 My Feature\n\nNew content");
+      const content = service.read("progress");
+      expect(content).toContain("New content");
+      expect((content.match(/## 🔄 My Feature/g) || []).length).toBe(1);
+    });
+
+    it("preserves other sections when replacing middle section", () => {
+      service.append("progress", "## Section A\n\nContent A");
+      service.append("progress", "## Section B\n\nContent B");
+      service.append("progress", "## Section C\n\nContent C");
+      service.upsert("progress", "Section B", "## Section B\n\nUpdated B");
+      const content = service.read("progress");
+      expect(content).toContain("Content A");
+      expect(content).toContain("Updated B");
+      expect(content).toContain("Content C");
+      expect(content).not.toContain("Content B");
+    });
+
+    it("preserves other sections when replacing last section", () => {
+      service.append("progress", "## Section A\n\nContent A");
+      service.append("progress", "## Section B\n\nContent B");
+      service.upsert("progress", "Section B", "## Section B\n\nUpdated B");
+      const content = service.read("progress");
+      expect(content).toContain("Content A");
+      expect(content).toContain("Updated B");
+    });
+
+    it("preserves other sections when replacing first section", () => {
+      service.append("progress", "## Section A\n\nContent A");
+      service.append("progress", "## Section B\n\nContent B");
+      service.upsert("progress", "Section A", "## Section A\n\nUpdated A");
+      const content = service.read("progress");
+      expect(content).toContain("Updated A");
+      expect(content).toContain("Content B");
+      expect(content).not.toContain("Content A");
+    });
+
+    it("returns the written entry", () => {
+      const result = service.upsert("decisions", "Test", "## Test\n\nContent");
+      expect(result).toContain("## Test");
+    });
+
+    it("updates the date/hash comment on replace", () => {
+      service.append("progress", "## Feature X\n\nOld");
+      const result = service.upsert("progress", "Feature X", "## Feature X\n\nNew");
+      expect(result).toMatch(/<!-- date:\d{4}-\d{2}-\d{2} hash:[a-f0-9]+ -->/);
+    });
+
+    it("is case-insensitive for title matching", () => {
+      service.append("progress", "## My Feature\n\nOld content");
+      service.upsert("progress", "my feature", "## My Feature\n\nNew content");
+      const content = service.read("progress");
+      expect((content.match(/## My Feature/g) || []).length).toBe(1);
+      expect(content).toContain("New content");
+    });
+
+    it("appends when file does not exist yet", () => {
+      const path = service.getPath("tech_debt");
+      rmSync(path, { force: true });
+      service.upsert("tech_debt", "New Debt", "## New Debt\n\nContent");
+      expect(service.read("tech_debt")).toContain("## New Debt");
+    });
+  });
 });
