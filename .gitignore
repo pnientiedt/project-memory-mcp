@@ -15,3 +15,7 @@ dist/
 # project-memory-mcp: keep *.md, ignore db and logs
 .project-memory/embeddings.db
 .project-memory/server.log
+
+# Generated output
+coverage/
+.agent-output/
