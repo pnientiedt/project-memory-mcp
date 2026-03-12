@@ -38,7 +38,8 @@ export class DeduplicationService {
       return { merged: 0, removed: 0, skipped: true };
     }
 
-    const newEntry = entries.find(e => normalizeTitle(e.section) === normalizeTitle(newSection));
+    // Use the most recently written occurrence (last in file) as the "new" entry
+    const newEntry = [...entries].reverse().find(e => normalizeTitle(e.section) === normalizeTitle(newSection));
     if (!newEntry) {
       return { merged: 0, removed: 0, skipped: true };
     }
@@ -49,9 +50,9 @@ export class DeduplicationService {
 
     const candidates = await this.embeddingService.search(newEntry.body, scope, 5);
 
-    // Exclude the entry itself; keep only those above the threshold
+    // Exclude the entry itself by embedding id (allows same-titled entries to be caught)
     const duplicates = candidates.filter(
-      c => c.score >= this.threshold && normalizeTitle(c.section) !== normalizeTitle(newSection),
+      c => c.score >= this.threshold && c.id !== newId,
     );
 
     if (duplicates.length === 0) {
@@ -61,7 +62,7 @@ export class DeduplicationService {
     // Merge with the single highest-scoring duplicate
     const topMatch = duplicates[0];
     const existingEntry = entries.find(
-      e => normalizeTitle(e.section) === normalizeTitle(topMatch.section),
+      e => normalizeTitle(e.section) === normalizeTitle(topMatch.section) && e.hash !== newEntry.hash,
     );
     if (!existingEntry) {
       return { merged: 0, removed: 0, skipped: true };

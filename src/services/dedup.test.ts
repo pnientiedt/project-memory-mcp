@@ -205,4 +205,26 @@ describe("DeduplicationService.runForScope()", () => {
     const content = fileService.read("decisions");
     expect(content).toContain("with details");
   });
+
+  it("merges same-titled duplicate entries (identical section name)", async () => {
+    fileService.append("decisions", "## Auth Decision\n\nUse JWT tokens.");
+    fileService.append("decisions", "## Auth Decision\n\nJWT is used for all API authentication.");
+    // The stub must return an id different from the new entry's dedup id.
+    // We don't know the exact hash, but any id not starting with "dedup:" will work.
+    const highScoreResult: SearchResult[] = [
+      { id: "contentid:abc123", source_file: "decisions", section: "Auth Decision", content: "Use JWT tokens.", score: 0.97 },
+    ];
+    const svc = new DeduplicationService(
+      fileService,
+      makeEmbeddingStub(highScoreResult),
+      makeOllamaStub(true, "## Auth Decision\n\nJWT is used for all API authentication. Use JWT tokens."),
+    );
+    const result = await svc.runForScope("decisions", "Auth Decision");
+    expect(result.merged).toBe(1);
+    expect(result.removed).toBe(2);
+    const content = fileService.read("decisions");
+    // Only one Auth Decision entry remains
+    expect((content.match(/## Auth Decision/g) || []).length).toBe(1);
+    expect(content).toContain("JWT is used for all API authentication");
+  });
 });
