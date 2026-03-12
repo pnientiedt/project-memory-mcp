@@ -322,3 +322,5 @@ The project structure is organized as follows:
 	+ `triggers/`: Triggers for the git hook, watcher, and session summary
 	+ `hooks/`: Shell script for the post-commit hook
 ```
+<!-- date:2026-03-12 hash:dcdd140735b7 -->
+Keywords: memory, ollama, project, progress, claude, session, context, files, search, knowledge
