@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "project-memory": {
+      "command": "node",
+      "args": ["./dist/index.js"]
+    },
     "filesystem": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
