@@ -37,7 +37,7 @@ const shutdown = () => {
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
-log("info", "Starting project-memory-mcp server", { version: "0.1.0" });
+log("info", "Starting project-memory-mcp server", { version: "0.2.0" });
 
 const transport = new StdioServerTransport();
 await mcp.connect(transport);
