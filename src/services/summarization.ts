@@ -2,52 +2,52 @@ import type { OllamaService } from "./ollama.js";
 import type { MemoryScope } from "../types.js";
 
 const PROMPTS: Record<MemoryScope, string> = {
-  decisions: `Du bist ein technischer Architekt. Analysiere den folgenden Git-Commit-Diff und extrahiere Architekturentscheidungen im ADR-Format.
+  decisions: `You are a technical architect. Analyze the following Git commit diff and extract architectural decisions in ADR format.
 
-Ausgabe-Format (Markdown):
-## [Kurztitel der Entscheidung]
+Output format (Markdown):
+## [Short title of the decision]
 
 **Status:** accepted
-**Kontext:** [Problem / Ausgangssituation]
-**Entscheidung:** [Was wurde entschieden]
-**Konsequenzen:** [Trade-offs und Auswirkungen]
+**Context:** [Problem / background situation]
+**Decision:** [What was decided]
+**Consequences:** [Trade-offs and impact]
 
-Wenn keine Architekturentscheidung erkennbar, antworte mit: KEIN ADR ERKENNBAR
+If no architectural decision is apparent, respond with: NO ADR FOUND
 
 Diff:`,
 
-  tech_debt: `Du bist ein Senior Engineer. Analysiere den folgenden Git-Commit-Diff auf technische Schulden, TODOs, bekannte Probleme oder Workarounds.
+  tech_debt: `You are a senior engineer. Analyze the following Git commit diff for technical debt, TODOs, known issues, or workarounds.
 
-Ausgabe-Format (Markdown):
+Output format (Markdown):
 ## Tech Debt [SEVERITY]
 
-[Beschreibung der technischen Schuld]
+[Description of the technical debt]
 
-**Betroffene Dateien:** [Dateien]
+**Affected Files:** [files]
 
-Schweregrade: LOW | MEDIUM | HIGH | CRITICAL
-Wenn keine technische Schuld erkennbar, antworte mit: KEIN TECH DEBT ERKENNBAR
+Severity levels: LOW | MEDIUM | HIGH | CRITICAL
+If no technical debt is apparent, respond with: NO TECH DEBT FOUND
 
 Diff:`,
 
-  progress: `Du bist ein Projektmanager. Fasse den folgenden Git-Commit als Projektfortschritts-Update zusammen.
+  progress: `You are a project manager. Summarize the following Git commit as a project progress update.
 
-Ausgabe-Format (Markdown):
-## ✅ [Meilensteinname]
+Output format (Markdown):
+## ✅ [Milestone name]
 
 **Status:** done
-[Kurze Beschreibung was erreicht wurde]
+[Brief description of what was accomplished]
 
-Diff und Commit-Message:`,
+Diff and commit message:`,
 
-  context: `Du bist ein technischer Dokumentar. Extrahiere relevantes Domain-Wissen, Konventionen oder Kontext aus dem folgenden Inhalt.
+  context: `You are a technical writer. Extract relevant domain knowledge, conventions, or context from the following content.
 
-Ausgabe-Format (Markdown):
-## [Kategorie]
+Output format (Markdown):
+## [Category]
 
-[Extrahiertes Wissen als klarer, wiederverwendbarer Text]
+[Extracted knowledge as clear, reusable text]
 
-Inhalt:`,
+Content:`,
 };
 
 export async function summarizeForScope(
@@ -64,7 +64,7 @@ export async function summarizeCommit(
   diff: string,
   commitMessage: string,
 ): Promise<Record<MemoryScope, string | null>> {
-  const fullText = `Commit-Message: ${commitMessage}\n\n${diff}`;
+  const fullText = `Commit message: ${commitMessage}\n\n${diff}`;
 
   const results: Record<MemoryScope, string | null> = {
     decisions: null,
@@ -80,7 +80,7 @@ export async function summarizeCommit(
   // Check for architectural decisions (heuristic: larger diffs or keywords)
   if (diff.length > 500 || /architect|pattern|design|refactor|interface/i.test(commitMessage)) {
     const decisionSummary = await summarizeForScope(ollamaService, fullText, "decisions");
-    if (!decisionSummary.includes("KEIN ADR ERKENNBAR")) {
+    if (!decisionSummary.includes("NO ADR FOUND")) {
       results.decisions = decisionSummary;
     }
   }
@@ -88,7 +88,7 @@ export async function summarizeCommit(
   // Check for tech debt
   if (/TODO|FIXME|HACK|XXX|debt|workaround|temporary/i.test(diff)) {
     const debtSummary = await summarizeForScope(ollamaService, fullText, "tech_debt");
-    if (!debtSummary.includes("KEIN TECH DEBT ERKENNBAR")) {
+    if (!debtSummary.includes("NO TECH DEBT FOUND")) {
       results.tech_debt = debtSummary;
     }
   }

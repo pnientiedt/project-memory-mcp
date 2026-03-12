@@ -67,7 +67,7 @@ describe("Admin Tools", () => {
       registerAdminTools(mockServer as never, fileService, stub);
 
       const result = await mockServer.callTool("reindex_memory", { scope: "all" }) as { content: Array<{ text: string }> };
-      expect(result.content[0].text).toContain("Re-indexiert:");
+      expect(result.content[0].text).toContain("Re-indexed:");
       expect(stub.clearScope).toHaveBeenCalledTimes(4);
     });
 
@@ -89,7 +89,7 @@ describe("Admin Tools", () => {
       registerAdminTools(mockServer as never, fileService, stub);
 
       const result = await mockServer.callTool("reindex_memory", { scope: "decisions" }) as { content: Array<{ text: string }> };
-      expect(result.content[0].text).toMatch(/Re-indexiert: \d+ Abschnitte/);
+      expect(result.content[0].text).toMatch(/Re-indexed: \d+ sections/);
     });
   });
 });

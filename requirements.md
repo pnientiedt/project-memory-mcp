@@ -1,198 +1,195 @@
 # requirements.md — project-memory-mcp
 
-> Persistente Wissensbasis für AI-gestützte Entwicklung via Model Context Protocol
+> Persistent knowledge base for AI-assisted development via Model Context Protocol
 
 **Version:** 0.1.0
-**Stand:** 2026-03-12
+**Date:** 2026-03-12
 **Status:** Draft
 
 ---
 
-## Inhaltsverzeichnis
+## Table of Contents
 
-1. [Projektziele & Erfolgskriterien](#1-projektziele--erfolgskriterien)
-2. [Funktionale Anforderungen](#2-funktionale-anforderungen)
-3. [Nicht-funktionale Anforderungen](#3-nicht-funktionale-anforderungen)
-4. [Technische Architektur](#4-technische-architektur)
-5. [Schnittstellen & Protokolle](#5-schnittstellen--protokolle)
-6. [Konfiguration](#6-konfiguration)
-7. [Implementierungsplan](#7-implementierungsplan)
-8. [Offene Fragen & Risiken](#8-offene-fragen--risiken)
+1. [Project Goals & Success Criteria](#1-project-goals--success-criteria)
+2. [Functional Requirements](#2-functional-requirements)
+3. [Non-Functional Requirements](#3-non-functional-requirements)
+4. [Technical Architecture](#4-technical-architecture)
+5. [Interfaces & Protocols](#5-interfaces--protocols)
+6. [Configuration](#6-configuration)
+7. [Implementation Plan](#7-implementation-plan)
+8. [Open Questions & Risks](#8-open-questions--risks)
 
 ---
 
-## 1. Projektziele & Erfolgskriterien
+## 1. Project Goals & Success Criteria
 
-### Problemstellung
+### Problem Statement
 
-Sitzungsbasierte AI-Assistenten (Claude, GPT, etc.) leiden unter "Amnesie": Jede neue
-Konversation beginnt ohne Wissen über vergangene Entscheidungen, technische Schulden
-oder den Projektfortschritt. Dies führt zu inkonsistenten Designentscheidungen und
-wiederholten Erklärungen über lange Entwicklungszeiträume.
+Session-based AI assistants (Claude, GPT, etc.) suffer from "amnesia": every new conversation begins without knowledge of past decisions, technical debt, or project progress. This leads to inconsistent design decisions and repeated explanations over long development periods.
 
-### Primäre User Stories
+### Primary User Stories
 
-| ID | Als... | möchte ich... | damit... |
-|----|--------|---------------|----------|
-| US-01 | Entwickler | dass Claude meine Architekturentscheidungen aus vergangenen Sessions kennt | keine bereits verworfenen Ansätze erneut vorgeschlagen werden |
-| US-02 | Entwickler | technische Schulden automatisch erfasst sehen | nichts in Vergessenheit gerät |
-| US-03 | Entwickler | den Projektfortschritt per AI abrufbar haben | ich jederzeit einen Statusüberblick bekomme |
-| US-04 | Entwickler | dass Memory-Updates automatisch nach Git-Commits passieren | ich keinen manuellen Pflegeaufwand habe |
-| US-05 | Entwickler | semantisch in der Wissensbasis suchen können | ich relevanten Kontext schnell finde |
-| US-06 | Team | die Wissensbasis im Repository versioniert haben | alle Teammitglieder denselben Kontext haben |
+| ID | As a... | I want to... | so that... |
+|----|---------|--------------|------------|
+| US-01 | Developer | have Claude know my architectural decisions from past sessions | already-rejected approaches are not suggested again |
+| US-02 | Developer | see technical debt recorded automatically | nothing gets forgotten |
+| US-03 | Developer | have project progress retrievable via AI | I can get a status overview at any time |
+| US-04 | Developer | have memory updates happen automatically after git commits | I don't have to maintain it manually |
+| US-05 | Developer | be able to search the knowledge base semantically | I can find relevant context quickly |
+| US-06 | Team | have the knowledge base versioned in the repository | all team members share the same context |
 
-### Erfolgskriterien (Definition of Done)
+### Success Criteria (Definition of Done)
 
-- [x] MCP Server startet und registriert sich erfolgreich in Claude Code
-- [x] Nach einem Git-Commit wird die Memory automatisch aktualisiert (< 30s)
-- [x] Claude kann via MCP Resource die Wissensbasis ohne explizite Anfrage einlesen
-- [x] Semantische Suche liefert relevante Treffer mit cosine similarity > 0.7
-- [x] Vollständig offline nutzbar (kein Cloud-API-Key erforderlich)
-- [x] Konfiguration per `.project-memory/config.yaml` möglich
+- [x] MCP server starts and registers successfully in Claude Code
+- [x] After a git commit, memory is updated automatically (< 30s)
+- [x] Claude can read the knowledge base via MCP Resource without explicit request
+- [x] Semantic search returns relevant results with cosine similarity > 0.7
+- [x] Fully usable offline (no cloud API key required)
+- [x] Configurable via `.project-memory/config.yaml`
 
 ### Out of Scope
 
-- Cloud-Sync oder zentrale Datenbank (ausschließlich lokal)
-- VS Code Extension oder andere IDE-Integrationen
-- Unterstützung für andere Programmiersprachen als TypeScript/Node.js im Core
-- Echtzeit-Kollaboration zwischen mehreren parallelen Sessions
-- Automatisches Löschen oder Archivieren von Memory-Einträgen
+- Cloud sync or central database (local only)
+- VS Code extension or other IDE integrations
+- Support for languages other than TypeScript/Node.js in the core
+- Real-time collaboration between multiple parallel sessions
+- Automatic deletion or archiving of memory entries
 
 ---
 
-## 2. Funktionale Anforderungen
+## 2. Functional Requirements
 
 ### 2.1 MCP Server Lifecycle
 
-| ID | Anforderung | Priorität | Akzeptanztest |
-|----|-------------|-----------|---------------|
-| F-01 | Der Server startet als stdio-basierter MCP Server | Must | `npx project-memory-mcp` registriert sich in Claude Code |
-| F-02 | Der Server liest Konfiguration aus `.project-memory/config.yaml` beim Start | Must | Fehlende Konfig erzeugt Defaults, keine Absturz |
-| F-03 | Der Server initialisiert `.project-memory/` Verzeichnis bei erstem Start | Must | Alle Memory-Dateien werden angelegt |
-| F-04 | Der Server loggt Fehler strukturiert (JSON) in `.project-memory/server.log` | Should | Fehler sind nachvollziehbar ohne Console-Zugriff |
-| F-05 | Graceful Shutdown: laufende Summarization wird abgeschlossen | Should | Kein Datenverlust bei SIGTERM |
+| ID | Requirement | Priority | Acceptance Test |
+|----|-------------|----------|-----------------|
+| F-01 | Server starts as a stdio-based MCP server | Must | `npx project-memory-mcp` registers in Claude Code |
+| F-02 | Server reads configuration from `.project-memory/config.yaml` at startup | Must | Missing config creates defaults, no crash |
+| F-03 | Server initializes `.project-memory/` directory on first start | Must | All memory files are created |
+| F-04 | Server logs errors as structured JSON to `.project-memory/server.log` | Should | Errors are traceable without console access |
+| F-05 | Graceful shutdown: ongoing summarization is completed | Should | No data loss on SIGTERM |
 
 ### 2.2 Memory Read — MCP Resources
 
-| ID | Anforderung | Priorität | Akzeptanztest |
-|----|-------------|-----------|---------------|
-| F-10 | `memory://decisions` Resource liefert Inhalt von `decisions.md` | Must | Claude liest Architekturentscheidungen ohne Tool-Call |
-| F-11 | `memory://tech-debt` Resource liefert Inhalt von `tech_debt.md` | Must | Claude liest Tech-Debt ohne Tool-Call |
-| F-12 | `memory://progress` Resource liefert Inhalt von `progress.md` | Must | Claude liest Projektfortschritt ohne Tool-Call |
-| F-13 | `memory://context` Resource liefert Inhalt von `context.md` | Must | Claude liest Domain-Wissen ohne Tool-Call |
-| F-14 | Resources werden bei Dateiänderung automatisch aktualisiert | Should | Resource-Inhalt nach Schreiboperation sofort aktuell |
+| ID | Requirement | Priority | Acceptance Test |
+|----|-------------|----------|-----------------|
+| F-10 | `memory://decisions` resource returns content of `decisions.md` | Must | Claude reads architectural decisions without tool call |
+| F-11 | `memory://tech-debt` resource returns content of `tech_debt.md` | Must | Claude reads tech debt without tool call |
+| F-12 | `memory://progress` resource returns content of `progress.md` | Must | Claude reads project progress without tool call |
+| F-13 | `memory://context` resource returns content of `context.md` | Must | Claude reads domain knowledge without tool call |
+| F-14 | Resources are automatically updated on file change | Should | Resource content is immediately current after write |
 
 ### 2.3 Memory Write — MCP Tools
 
-| ID | Anforderung | Priorität | Akzeptanztest |
-|----|-------------|-----------|---------------|
-| F-20 | `add_decision` Tool schreibt ADR-Eintrag in `decisions.md` | Must | Eintrag mit Datum, Titel, Kontext, Entscheidung, Konsequenzen |
-| F-21 | `log_tech_debt` Tool schreibt Eintrag in `tech_debt.md` | Must | Eintrag mit Schweregrad, Beschreibung, betroffene Dateien |
-| F-22 | `update_progress` Tool aktualisiert `progress.md` | Must | Meilenstein mit Status (done/in-progress/planned) |
-| F-23 | `add_context` Tool schreibt in `context.md` | Must | Freiform-Kontext mit Kategorie-Tag |
-| F-24 | Alle Write-Tools geben den geschriebenen Eintrag als Bestätigung zurück | Should | Keine "blindes" Schreiben |
-| F-25 | Write-Operationen sind idempotent (kein Duplikat bei Wiederholung) | Could | Gleicher Inhalt doppelt aufgerufen → kein Duplikat |
+| ID | Requirement | Priority | Acceptance Test |
+|----|-------------|----------|-----------------|
+| F-20 | `add_decision` tool writes ADR entry to `decisions.md` | Must | Entry with date, title, context, decision, consequences |
+| F-21 | `log_tech_debt` tool writes entry to `tech_debt.md` | Must | Entry with severity, description, affected files |
+| F-22 | `update_progress` tool updates `progress.md` | Must | Milestone with status (done/in-progress/planned) |
+| F-23 | `add_context` tool writes to `context.md` | Must | Freeform context with category tag |
+| F-24 | All write tools return the written entry as confirmation | Should | No "blind" writing |
+| F-25 | Write operations are idempotent (no duplicate on repeat) | Could | Same content called twice → no duplicate |
 
 ### 2.4 Memory Search
 
-| ID | Anforderung | Priorität | Akzeptanztest |
-|----|-------------|-----------|---------------|
-| F-30 | `search_memory` Tool nimmt Freitext-Query entgegen | Must | Query liefert Top-5 semantisch relevante Einträge |
-| F-31 | Suchergebnisse enthalten Quelldatei, Abschnitt und Similarity-Score | Must | Treffer sind nachvollziehbar verortet |
-| F-32 | Neue Einträge werden automatisch in den Embedding-Index aufgenommen | Must | Neuer Eintrag ist sofort durchsuchbar |
-| F-33 | `search_memory` unterstützt optionalen `scope`-Filter (decisions/tech_debt/...) | Should | Suche auf einzelne Memory-Datei einschränkbar |
+| ID | Requirement | Priority | Acceptance Test |
+|----|-------------|----------|-----------------|
+| F-30 | `search_memory` tool accepts a freetext query | Must | Query returns top-5 semantically relevant entries |
+| F-31 | Search results contain source file, section, and similarity score | Must | Results are traceable to their origin |
+| F-32 | New entries are automatically added to the embedding index | Must | New entry is immediately searchable |
+| F-33 | `search_memory` supports optional `scope` filter (decisions/tech_debt/...) | Should | Search can be restricted to a single memory file |
 
-### 2.5 Git-Integration
+### 2.5 Git Integration
 
-| ID | Anforderung | Priorität | Akzeptanztest |
-|----|-------------|-----------|---------------|
-| F-40 | Post-Commit-Hook wird bei `init` automatisch in `.git/hooks/` installiert | Must | Nach `git commit` wird Summarization ausgelöst |
-| F-41 | Hook sendet Diff + Commit-Message an Ollama zur Zusammenfassung | Must | Relevante Änderungen landen in `progress.md` |
-| F-42 | Hook überspringt Commits mit `[skip-memory]` im Message | Should | Opt-out pro Commit möglich |
-| F-43 | Hook läuft asynchron (blockiert `git commit` nicht) | Must | `git commit` dauert nicht länger als ohne Hook |
-| F-44 | Hook-Fehler werden geloggt, brechen Commit nicht ab | Must | Commit gelingt auch wenn Ollama nicht erreichbar |
+| ID | Requirement | Priority | Acceptance Test |
+|----|-------------|----------|-----------------|
+| F-40 | Post-commit hook is installed automatically in `.git/hooks/` by `init` | Must | After `git commit` summarization is triggered |
+| F-41 | Hook sends diff + commit message to Ollama for summarization | Must | Relevant changes land in `progress.md` |
+| F-42 | Hook skips commits with `[skip-memory]` in the message | Should | Per-commit opt-out is possible |
+| F-43 | Hook runs asynchronously (does not block `git commit`) | Must | `git commit` takes no longer than without the hook |
+| F-44 | Hook errors are logged, commit is not aborted | Must | Commit succeeds even if Ollama is unreachable |
 
-### 2.6 Session-Management
+### 2.6 Session Management
 
-| ID | Anforderung | Priorität | Akzeptanztest |
-|----|-------------|-----------|---------------|
-| F-50 | Server erkennt Inaktivität nach konfigurierbarem Timeout (Default: 30min) | Should | Session-Ende wird detektiert |
-| F-51 | Bei Session-Ende wird Zusammenfassung der letzten Tool-Calls generiert | Should | `progress.md` erhält Session-Summary |
-| F-52 | Session-Zusammenfassung enthält: Datum, Dauer, geänderte Dateien, Entscheidungen | Should | Nachvollziehbarer Session-Log |
+| ID | Requirement | Priority | Acceptance Test |
+|----|-------------|----------|-----------------|
+| F-50 | Server detects inactivity after configurable timeout (default: 30min) | Should | Session end is detected |
+| F-51 | On session end a summary of recent tool calls is generated | Should | `progress.md` receives a session summary |
+| F-52 | Session summary contains: date, duration, changed files, decisions | Should | Traceable session log |
 
-### 2.7 Filesystem-Watcher
+### 2.7 Filesystem Watcher
 
-| ID | Anforderung | Priorität | Akzeptanztest |
-|----|-------------|-----------|---------------|
-| F-60 | Watcher beobachtet konfigurierbare Pfade (Default: `CLAUDE.md`, `docs/adr/`) | Should | Änderungen triggern Memory-Update |
-| F-61 | Geänderte Datei wird per Ollama zusammengefasst und in `context.md` geschrieben | Should | Neuer Kontext-Eintrag nach Dateiänderung |
-| F-62 | Watcher ignoriert `.project-memory/` Verzeichnis (kein Rekursions-Loop) | Must | Keine Endlosschleife durch eigene Schreiboperationen |
+| ID | Requirement | Priority | Acceptance Test |
+|----|-------------|----------|-----------------|
+| F-60 | Watcher monitors configurable paths (default: `CLAUDE.md`, `docs/adr/`) | Should | Changes trigger memory update |
+| F-61 | Changed file is summarized via Ollama and written to `context.md` | Should | New context entry after file change |
+| F-62 | Watcher ignores `.project-memory/` directory (no recursion loop) | Must | No infinite loop from own write operations |
 
-### 2.8 Ollama-Integration
+### 2.8 Ollama Integration
 
-| ID | Anforderung | Priorität | Akzeptanztest |
-|----|-------------|-----------|---------------|
-| F-70 | Server prüft Ollama-Verfügbarkeit beim Start | Must | Klare Fehlermeldung wenn Ollama nicht läuft |
-| F-71 | Ollama-Modell ist per Config wählbar (Default: `llama3.2`) | Must | Modellwechsel ohne Code-Änderung |
-| F-72 | Bei Ollama-Fehler: Fallback auf Keyword-Extraktion (kein LLM) | Should | Grundfunktion bleibt ohne Ollama erhalten |
-| F-73 | Ollama-Timeout konfigurierbar (Default: 60s) | Should | Kein ewiges Warten bei hängendem Modell |
+| ID | Requirement | Priority | Acceptance Test |
+|----|-------------|----------|-----------------|
+| F-70 | Server checks Ollama availability at startup | Must | Clear error message when Ollama is not running |
+| F-71 | Ollama model is selectable via config (default: `llama3.2`) | Must | Model change without code modification |
+| F-72 | On Ollama failure: fallback to keyword extraction (no LLM) | Should | Core functionality preserved without Ollama |
+| F-73 | Ollama timeout is configurable (default: 60s) | Should | No infinite wait on a hung model |
 
-### 2.9 Embedding-Pipeline
+### 2.9 Embedding Pipeline
 
-| ID | Anforderung | Priorität | Akzeptanztest |
-|----|-------------|-----------|---------------|
-| F-80 | Embeddings werden mit `transformers.js` (all-MiniLM-L6-v2) lokal berechnet | Must | Keine externe API für Embeddings nötig |
-| F-81 | Vektoren werden in SQLite gespeichert (`.project-memory/embeddings.db`) | Must | Persistenz über Server-Neustarts |
-| F-82 | Re-Indexierung des gesamten Memory auf Befehl (`reindex_memory` Tool) | Should | Konsistenz nach manuellen Dateiänderungen |
-| F-83 | Embedding-Modell wird beim ersten Start automatisch heruntergeladen | Must | Kein manueller Setup-Schritt |
+| ID | Requirement | Priority | Acceptance Test |
+|----|-------------|----------|-----------------|
+| F-80 | Embeddings are computed locally with `transformers.js` (all-MiniLM-L6-v2) | Must | No external API required for embeddings |
+| F-81 | Vectors are stored in SQLite (`.project-memory/embeddings.db`) | Must | Persistence across server restarts |
+| F-82 | Full memory re-indexing on demand (`reindex_memory` tool) | Should | Consistency after manual file changes |
+| F-83 | Embedding model is downloaded automatically on first start | Must | No manual setup step required |
 
 ---
 
-## 3. Nicht-funktionale Anforderungen
+## 3. Non-Functional Requirements
 
 ### Performance
 
-| Metrik | Zielwert | Begründung |
-|--------|----------|------------|
-| MCP Tool Response (Read) | < 200ms | Keine spürbare Verzögerung in Claude |
-| MCP Tool Response (Write) | < 500ms | Schreiben inkl. Embedding-Update |
-| Semantische Suche | < 300ms | Inkl. Embedding der Query |
-| Ollama Summarization | < 60s (Timeout) | Asynchron, blockiert nicht |
-| Server-Startzeit | < 3s | Inkl. SQLite-Init und Ollama-Check |
-| Embedding-Indexierung (neu) | < 2s pro Eintrag | |
+| Metric | Target | Rationale |
+|--------|--------|-----------|
+| MCP tool response (read) | < 200ms | No noticeable delay in Claude |
+| MCP tool response (write) | < 500ms | Write including embedding update |
+| Semantic search | < 300ms | Including query embedding |
+| Ollama summarization | < 60s (timeout) | Async, does not block |
+| Server startup time | < 3s | Including SQLite init and Ollama check |
+| Embedding indexing (new entry) | < 2s per entry | |
 
-### Skalierbarkeit
+### Scalability
 
-- Bis zu **10.000 Memory-Einträge** ohne Performance-Degradierung
-- Memory-Dateien bis **1 MB** pro Datei ohne Probleme handhabbar
-- SQLite-Datenbank bis **500 MB** unterstützt
+- Up to **10,000 memory entries** without performance degradation
+- Memory files up to **1 MB** per file handled without issues
+- SQLite database up to **500 MB** supported
 
-### Sicherheit
+### Security
 
-- Keine Credentials, API-Keys oder Passwörter in Memory-Dateien speichern
-- `.project-memory/` wird automatisch in `.gitignore` eingetragen (außer `*.md`)
-- `embeddings.db` und `server.log` landen in `.gitignore`
-- Pfad-Traversal-Angriffe bei Filesystem-Watcher verhindern
-- Ollama-Kommunikation ausschließlich über localhost
+- No credentials, API keys, or passwords stored in memory files
+- `.project-memory/` is automatically added to `.gitignore` (except `*.md`)
+- `embeddings.db` and `server.log` are excluded via `.gitignore`
+- Path traversal attacks prevented in filesystem watcher
+- Ollama communication exclusively over localhost
 
-### Portabilität
+### Portability
 
 - macOS (arm64, x86_64)
 - Linux (Ubuntu 22.04+, Debian 12+)
 - Windows via WSL2
 - Node.js >= 20 LTS
 
-### Offline-Fähigkeit
+### Offline Capability
 
-- Kein Internet-Zugriff zur Laufzeit erforderlich
-- Einmaliger Download des Embedding-Modells beim ersten Start
-- Ollama läuft lokal
+- No internet access required at runtime
+- One-time download of the embedding model on first start
+- Ollama runs locally
 
 ---
 
-## 4. Technische Architektur
+## 4. Technical Architecture
 
-### Komponentendiagramm
+### Component Diagram
 
 ```mermaid
 graph TB
@@ -210,7 +207,7 @@ graph TB
         DB[(SQLite<br/>embeddings.db)]
     end
 
-    subgraph "Trigger"
+    subgraph "Triggers"
         GH[Git Post-Commit Hook]
         FW[Filesystem Watcher]
         IT[Inactivity Timer]
@@ -244,7 +241,7 @@ graph TB
     GR --> GH
 ```
 
-### Datenfluss: Git-Commit → Memory Update
+### Data Flow: Git Commit → Memory Update
 
 ```mermaid
 sequenceDiagram
@@ -255,45 +252,46 @@ sequenceDiagram
     participant F as Memory Files
     participant E as Embedding DB
 
-    G->>H: commit abgeschlossen
+    G->>H: commit completed
     H->>M: POST /internal/git-event {diff, message}
     M->>O: summarize(diff + message)
     O-->>M: summary text
     M->>F: append to progress.md
     M->>E: embed(summary) → upsert vector
+    M->>G: git commit [skip-memory] (auto-commit memory files)
     M-->>H: 200 OK
-    Note over H,G: asynchron, blockiert nicht
+    Note over H,G: async, does not block commit
 ```
 
-### Projektstruktur
+### Project Structure
 
-Das Projekt wird direkt im Repository-Root erstellt (kein Unterordner `project-memory-mcp/`).
+The project is created directly in the repository root (no `project-memory-mcp/` subdirectory).
 
 ```
-./                            # Repository-Root (scaile/)
+./                            # Repository root (scaile/)
 ├── src/
-│   ├── index.ts              # Einstiegspunkt, MCP Server Setup
-│   ├── server.ts             # MCP Server Konfiguration
+│   ├── index.ts              # Entry point, MCP server setup
+│   ├── server.ts             # MCP server configuration
 │   ├── resources/
-│   │   └── memory.ts         # MCP Resource Handler (memory://)
+│   │   └── memory.ts         # MCP resource handler (memory://)
 │   ├── tools/
 │   │   ├── read.ts           # get_memory, search_memory
 │   │   ├── write.ts          # add_decision, log_tech_debt, etc.
 │   │   └── admin.ts          # reindex_memory
 │   ├── services/
-│   │   ├── ollama.ts         # Ollama HTTP Client
-│   │   ├── embedding.ts      # transformers.js Wrapper
-│   │   ├── file.ts           # MD File I/O
-│   │   └── git.ts            # simple-git Integration
+│   │   ├── ollama.ts         # Ollama HTTP client
+│   │   ├── embedding.ts      # transformers.js wrapper
+│   │   ├── file.ts           # MD file I/O
+│   │   └── git.ts            # simple-git integration
 │   ├── triggers/
-│   │   ├── git-hook.ts       # HTTP Endpoint für Post-Commit Hook
-│   │   ├── watcher.ts        # Filesystem Watcher (chokidar)
-│   │   └── session.ts        # Inactivity Timer
-│   ├── config.ts             # Config laden & validieren
-│   └── types.ts              # Gemeinsame TypeScript-Typen
+│   │   ├── git-hook.ts       # HTTP endpoint for post-commit hook
+│   │   ├── watcher.ts        # Filesystem watcher (chokidar)
+│   │   └── session.ts        # Inactivity timer
+│   ├── config.ts             # Load & validate config
+│   └── types.ts              # Shared TypeScript types
 ├── hooks/
-│   └── post-commit           # Shell-Script für Git Hook
-├── .project-memory/          # Wird im Zielprojekt erstellt
+│   └── post-commit           # Shell script for git hook
+├── .project-memory/          # Created in the target project
 │   ├── decisions.md
 │   ├── tech_debt.md
 │   ├── progress.md
@@ -306,16 +304,16 @@ Das Projekt wird direkt im Repository-Root erstellt (kein Unterordner `project-m
 └── README.md
 ```
 
-### SQLite Datenbankschema
+### SQLite Database Schema
 
 ```sql
 CREATE TABLE embeddings (
-    id          TEXT PRIMARY KEY,        -- SHA256 des Inhalts
+    id          TEXT PRIMARY KEY,        -- SHA256 of content
     source_file TEXT NOT NULL,           -- 'decisions' | 'tech_debt' | 'progress' | 'context'
-    section     TEXT NOT NULL,           -- Markdown-Abschnitt (Überschrift)
-    content     TEXT NOT NULL,           -- Originaler Text
-    vector      BLOB NOT NULL,           -- Float32Array als BLOB
-    created_at  INTEGER NOT NULL,        -- Unix Timestamp
+    section     TEXT NOT NULL,           -- Markdown section (heading)
+    content     TEXT NOT NULL,           -- Original text
+    vector      BLOB NOT NULL,           -- Float32Array as BLOB
+    created_at  INTEGER NOT NULL,        -- Unix timestamp
     updated_at  INTEGER NOT NULL
 );
 
@@ -325,16 +323,16 @@ CREATE INDEX idx_created_at ON embeddings(created_at);
 
 ---
 
-## 5. Schnittstellen & Protokolle
+## 5. Interfaces & Protocols
 
 ### MCP Resources
 
-| URI | MIME-Type | Beschreibung |
-|-----|-----------|--------------|
-| `memory://decisions` | `text/markdown` | Architekturentscheidungen (ADRs) |
-| `memory://tech-debt` | `text/markdown` | Technische Schulden |
-| `memory://progress` | `text/markdown` | Projektfortschritt & Meilensteine |
-| `memory://context` | `text/markdown` | Domain-Wissen & Konventionen |
+| URI | MIME Type | Description |
+|-----|-----------|-------------|
+| `memory://decisions` | `text/markdown` | Architectural decisions (ADRs) |
+| `memory://tech-debt` | `text/markdown` | Technical debt |
+| `memory://progress` | `text/markdown` | Project progress & milestones |
+| `memory://context` | `text/markdown` | Domain knowledge & conventions |
 
 ### MCP Tools — JSON Schema
 
@@ -342,15 +340,15 @@ CREATE INDEX idx_created_at ON embeddings(created_at);
 ```json
 {
   "name": "add_decision",
-  "description": "Speichert eine Architekturentscheidung (ADR) in der persistenten Wissensbasis",
+  "description": "Saves an architectural decision (ADR) to the persistent knowledge base",
   "inputSchema": {
     "type": "object",
     "required": ["title", "decision", "context"],
     "properties": {
-      "title":        { "type": "string", "description": "Kurzer Titel der Entscheidung" },
-      "context":      { "type": "string", "description": "Problem / Ausgangssituation" },
-      "decision":     { "type": "string", "description": "Getroffene Entscheidung" },
-      "consequences": { "type": "string", "description": "Konsequenzen und Trade-offs" },
+      "title":        { "type": "string", "description": "Short title of the decision" },
+      "context":      { "type": "string", "description": "Problem / background situation" },
+      "decision":     { "type": "string", "description": "The decision that was made" },
+      "consequences": { "type": "string", "description": "Consequences and trade-offs" },
       "status":       { "type": "string", "enum": ["proposed", "accepted", "deprecated"], "default": "accepted" }
     }
   }
@@ -361,15 +359,15 @@ CREATE INDEX idx_created_at ON embeddings(created_at);
 ```json
 {
   "name": "log_tech_debt",
-  "description": "Erfasst technische Schulden oder bekannte Probleme",
+  "description": "Records technical debt or known issues",
   "inputSchema": {
     "type": "object",
     "required": ["description", "severity"],
     "properties": {
-      "description":    { "type": "string", "description": "Beschreibung der technischen Schuld" },
+      "description":    { "type": "string", "description": "Description of the technical debt" },
       "severity":       { "type": "string", "enum": ["low", "medium", "high", "critical"] },
       "affected_files": { "type": "array", "items": { "type": "string" } },
-      "ticket":         { "type": "string", "description": "Optionale Issue-Referenz (z.B. bd-abc1)" }
+      "ticket":         { "type": "string", "description": "Optional issue reference (e.g. bd-abc1)" }
     }
   }
 }
@@ -379,14 +377,14 @@ CREATE INDEX idx_created_at ON embeddings(created_at);
 ```json
 {
   "name": "update_progress",
-  "description": "Aktualisiert den Projektfortschritt mit einem Meilenstein oder einer Statusänderung",
+  "description": "Updates project progress with a milestone or status change",
   "inputSchema": {
     "type": "object",
     "required": ["milestone", "status"],
     "properties": {
-      "milestone":   { "type": "string", "description": "Name des Meilensteins" },
+      "milestone":   { "type": "string", "description": "Name of the milestone" },
       "status":      { "type": "string", "enum": ["planned", "in-progress", "done", "blocked"] },
-      "description": { "type": "string", "description": "Optionale Details" }
+      "description": { "type": "string", "description": "Optional details" }
     }
   }
 }
@@ -396,13 +394,13 @@ CREATE INDEX idx_created_at ON embeddings(created_at);
 ```json
 {
   "name": "add_context",
-  "description": "Speichert Domain-Wissen, Konventionen oder sonstigen Freitext-Kontext",
+  "description": "Saves domain knowledge, conventions, or other freeform context",
   "inputSchema": {
     "type": "object",
     "required": ["content"],
     "properties": {
-      "content":  { "type": "string", "description": "Zu speichernder Kontext" },
-      "category": { "type": "string", "description": "Kategorie-Tag (z.B. 'api', 'domain', 'convention')" }
+      "content":  { "type": "string", "description": "Context to save" },
+      "category": { "type": "string", "description": "Category tag (e.g. 'api', 'domain', 'convention')" }
     }
   }
 }
@@ -412,12 +410,12 @@ CREATE INDEX idx_created_at ON embeddings(created_at);
 ```json
 {
   "name": "search_memory",
-  "description": "Semantische Suche in der gesamten Wissensbasis",
+  "description": "Semantic search across the entire knowledge base",
   "inputSchema": {
     "type": "object",
     "required": ["query"],
     "properties": {
-      "query":   { "type": "string", "description": "Suchanfrage in natürlicher Sprache" },
+      "query":   { "type": "string", "description": "Search query in natural language" },
       "scope":   { "type": "string", "enum": ["decisions", "tech_debt", "progress", "context", "all"], "default": "all" },
       "top_k":   { "type": "integer", "minimum": 1, "maximum": 20, "default": 5 }
     }
@@ -429,7 +427,7 @@ CREATE INDEX idx_created_at ON embeddings(created_at);
 ```json
 {
   "name": "reindex_memory",
-  "description": "Re-indexiert alle Memory-Dateien in der Embedding-Datenbank",
+  "description": "Re-indexes all memory files in the embedding database",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -439,9 +437,9 @@ CREATE INDEX idx_created_at ON embeddings(created_at);
 }
 ```
 
-### Interner Git-Hook Endpoint
+### Internal Git Hook Endpoint
 
-Der MCP Server öffnet einen lokalen HTTP-Server auf einem konfigurierbaren Port (Default: `47832`) ausschließlich für den Git-Hook:
+The MCP server opens a local HTTP server on a configurable port (default: `47832`) exclusively for the git hook:
 
 ```
 POST http://localhost:47832/internal/git-event
@@ -456,55 +454,55 @@ Content-Type: application/json
 }
 ```
 
-### Ollama API — Verwendete Endpoints
+### Ollama API — Used Endpoints
 
-| Endpoint | Methode | Verwendung |
-|----------|---------|------------|
-| `GET /api/tags` | GET | Verfügbarkeitsprüfung beim Start |
+| Endpoint | Method | Usage |
+|----------|--------|-------|
+| `GET /api/tags` | GET | Availability check at startup |
 | `POST /api/generate` | POST | Summarization (streaming) |
 
 ---
 
-## 6. Konfiguration
+## 6. Configuration
 
 ### `.project-memory/config.yaml`
 
 ```yaml
-# project-memory-mcp Konfiguration
-# Alle Werte sind optional — fehlende Werte werden mit Defaults befüllt
+# project-memory-mcp configuration
+# All values are optional — missing values are filled with defaults
 
-# Ollama-Einstellungen
+# Ollama settings
 ollama:
   base_url: "http://localhost:11434"  # Ollama API URL
-  model: "llama3.2"                   # Zu verwendendes Modell
-  timeout_seconds: 60                 # Timeout für Summarization-Requests
-  fallback_to_keywords: true          # Bei Ollama-Fehler: Keyword-Extraktion als Fallback
+  model: "llama3.2"                   # Model to use
+  timeout_seconds: 60                 # Timeout for summarization requests
+  fallback_to_keywords: true          # On Ollama failure: keyword extraction as fallback
 
-# Embedding-Einstellungen
+# Embedding settings
 embeddings:
-  model: "Xenova/all-MiniLM-L6-v2"   # transformers.js Modell-ID (HuggingFace)
+  model: "Xenova/all-MiniLM-L6-v2"   # transformers.js model ID (HuggingFace)
   db_path: ".project-memory/embeddings.db"
 
-# Git-Integration
+# Git integration
 git:
-  hook_enabled: true                  # Post-Commit-Hook aktivieren
-  hook_port: 47832                    # Lokaler Port für Hook-Kommunikation
-  skip_keyword: "[skip-memory]"       # Commits mit diesem Keyword überspringen
-  summarize_diffs: true               # Diffs an Ollama schicken
+  hook_enabled: true                  # Enable post-commit hook
+  hook_port: 47832                    # Local port for hook communication
+  skip_keyword: "[skip-memory]"       # Skip commits containing this keyword
+  summarize_diffs: true               # Send diffs to Ollama
 
-# Filesystem-Watcher
+# Filesystem watcher
 watcher:
   enabled: true
-  paths:                              # Zu beobachtende Pfade (relativ zum Projektroot)
+  paths:                              # Paths to watch (relative to project root)
     - "CLAUDE.md"
     - "docs/adr/"
     - "README.md"
-  debounce_ms: 2000                   # Wartezeit nach letzter Änderung vor Verarbeitung
+  debounce_ms: 2000                   # Wait time after last change before processing
 
-# Session-Management
+# Session management
 session:
-  inactivity_timeout_minutes: 30      # Timeout für Session-Ende-Detection
-  summarize_on_end: true              # Session-Zusammenfassung bei Ende
+  inactivity_timeout_minutes: 30      # Timeout for session end detection
+  summarize_on_end: true              # Write session summary on end
 
 # Logging
 logging:
@@ -512,7 +510,7 @@ logging:
   file: ".project-memory/server.log"
   max_size_mb: 10
 
-# Memory-Dateien
+# Memory files
 memory:
   base_dir: ".project-memory"
   files:
@@ -524,8 +522,8 @@ memory:
 
 ### Environment Variable Overrides
 
-| Variable | Überschreibt | Beispiel |
-|----------|-------------|---------|
+| Variable | Overrides | Example |
+|----------|-----------|---------|
 | `PMM_OLLAMA_URL` | `ollama.base_url` | `http://192.168.1.10:11434` |
 | `PMM_OLLAMA_MODEL` | `ollama.model` | `mistral` |
 | `PMM_HOOK_PORT` | `git.hook_port` | `48000` |
@@ -533,147 +531,147 @@ memory:
 
 ---
 
-## 7. Implementierungsplan
+## 7. Implementation Plan
 
-### Phase 1 — Core MCP Server (MVP) ✦ Priorität: Kritisch
+### Phase 1 — Core MCP Server (MVP) ✦ Priority: Critical
 
-**Ziel:** Funktionierender MCP Server mit manuellen Read/Write-Tools
+**Goal:** Working MCP server with manual read/write tools
 
-- [ ] Projekt-Setup: TypeScript, MCP SDK, ESLint, Vitest
-- [ ] `config.ts`: Laden und Validieren der Konfiguration
-- [ ] `file.ts`: Read/Write für alle vier Memory-Dateien
+- [ ] Project setup: TypeScript, MCP SDK, ESLint, Vitest
+- [ ] `config.ts`: load and validate configuration
+- [ ] `file.ts`: read/write for all four memory files
 - [ ] MCP Resources: `memory://decisions`, `memory://tech-debt`, `memory://progress`, `memory://context`
 - [ ] MCP Tools: `add_decision`, `log_tech_debt`, `update_progress`, `add_context`
-- [ ] Server-Initialisierung: `.project-memory/` Verzeichnis und Default-Dateien anlegen
-- [ ] **MVP-Akzeptanztest:** Claude kann Memory lesen und schreiben
+- [ ] Server initialization: create `.project-memory/` directory and default files
+- [ ] **MVP acceptance test:** Claude can read and write memory
 
-**Abhängigkeiten:** keine
+**Dependencies:** none
 
-### Phase 2 — Embedding & Suche
+### Phase 2 — Embedding & Search
 
-**Ziel:** Semantische Suche in der Wissensbasis
+**Goal:** Semantic search across the knowledge base
 
-- [ ] `embedding.ts`: transformers.js Integration, Modell-Download
-- [ ] SQLite-Schema anlegen, `embeddings.db` initialisieren
-- [ ] Automatisches Embedding neuer Einträge nach Write-Operationen
-- [ ] `search_memory` Tool implementieren
-- [ ] `reindex_memory` Tool implementieren
+- [ ] `embedding.ts`: transformers.js integration, model download
+- [ ] Create SQLite schema, initialize `embeddings.db`
+- [ ] Automatic embedding of new entries after write operations
+- [ ] Implement `search_memory` tool
+- [ ] Implement `reindex_memory` tool
 
-**Abhängigkeiten:** Phase 1 abgeschlossen
+**Dependencies:** Phase 1 complete
 
-### Phase 3 — Ollama-Integration
+### Phase 3 — Ollama Integration
 
-**Ziel:** Automatische Summarization via lokalem LLM
+**Goal:** Automatic summarization via local LLM
 
-- [ ] `ollama.ts`: HTTP Client, Verfügbarkeitsprüfung, Streaming
-- [ ] Summarization-Prompts für jede Memory-Kategorie
-- [ ] Keyword-Extraktion als Fallback (kein LLM)
-- [ ] Timeout-Handling und Fehlerbehandlung
+- [ ] `ollama.ts`: HTTP client, availability check, streaming
+- [ ] Summarization prompts for each memory category
+- [ ] Keyword extraction as fallback (no LLM)
+- [ ] Timeout handling and error handling
 
-**Abhängigkeiten:** Phase 1 abgeschlossen
+**Dependencies:** Phase 1 complete
 
-### Phase 4 — Git-Integration
+### Phase 4 — Git Integration
 
-**Ziel:** Automatische Memory-Updates nach Commits
+**Goal:** Automatic memory updates after commits
 
-- [ ] Interner HTTP-Server für Hook-Kommunikation
-- [ ] `git.ts`: simple-git Integration, Diff-Extraktion
-- [ ] Post-Commit-Hook Shell-Script
-- [ ] Hook-Installation bei `npx project-memory-mcp init`
-- [ ] Asynchrone Verarbeitung (blockiert Commit nicht)
+- [ ] Internal HTTP server for hook communication
+- [ ] `git.ts`: simple-git integration, diff extraction
+- [ ] Post-commit hook shell script
+- [ ] Hook installation via `npx project-memory-mcp init`
+- [ ] Async processing (does not block commit)
 
-**Abhängigkeiten:** Phase 3 abgeschlossen
+**Dependencies:** Phase 3 complete
 
-### Phase 5 — Filesystem-Watcher & Session-Management
+### Phase 5 — Filesystem Watcher & Session Management
 
-**Ziel:** Vollständige Automatisierung ohne manuelle Eingriffe
+**Goal:** Full automation without manual intervention
 
-- [ ] `watcher.ts`: chokidar Integration, Debouncing
-- [ ] Konfigurierbare Watch-Pfade
-- [ ] `session.ts`: Inaktivitäts-Timer, Session-Zusammenfassung
-- [ ] Session-Summary wird in `progress.md` geschrieben
+- [ ] `watcher.ts`: chokidar integration, debouncing
+- [ ] Configurable watch paths
+- [ ] `session.ts`: inactivity timer, session summary
+- [ ] Session summary written to `progress.md`
 
-**Abhängigkeiten:** Phase 3 abgeschlossen
+**Dependencies:** Phase 3 complete
 
-### MVP-Definition
+### MVP Definition
 
-Phase 1 allein ist ein nutzbarer MVP:
-- Claude kann Memory lesen (via Resources, automatisch)
-- Claude kann Memory schreiben (via Tools, auf Anforderung)
-- Keine Automatisierung, aber vollständige manuelle Kontrolle
-- Wert: Kontext-Persistenz über Sessions, auch ohne Embedding/Git
-
----
+Phase 1 alone is a usable MVP:
+- Claude can read memory (via resources, automatically)
+- Claude can write memory (via tools, on request)
+- No automation, but full manual control
+- Value: context persistence across sessions, even without embedding/git
 
 ---
 
-## 8. Multi-Projekt-Nutzbarkeit (Phase 6)
+---
 
-### Ziel
+## 8. Multi-Project Usability (Phase 6)
 
-`project-memory-mcp` soll als öffentliches npm-Paket einfach in beliebigen Projekten nutzbar sein — unabhängig von Programmiersprache oder Stack.
+### Goal
 
-### Primäre User Story
+`project-memory-mcp` should be usable as a public npm package in any project — regardless of programming language or stack.
 
-| ID | Als... | möchte ich... | damit... |
-|----|--------|---------------|----------|
-| US-10 | Entwickler in einem neuen Projekt | `npx project-memory-mcp init` ausführen | der MCP Server sofort einsatzbereit ist, ohne manuelles Setup |
+### Primary User Story
 
-### Funktionale Anforderungen — Phase 6
+| ID | As a... | I want to... | so that... |
+|----|---------|--------------|------------|
+| US-10 | Developer in a new project | run `npx project-memory-mcp init` | the MCP server is ready to use immediately without manual setup |
 
-#### 6.1 npm-Paket & Distribution
+### Functional Requirements — Phase 6
 
-| ID | Anforderung | Priorität |
-|----|-------------|-----------|
-| F-90 | Paket unter dem Namen `project-memory-mcp` auf npm veröffentlicht | Must |
-| F-91 | `npx project-memory-mcp` startet den Server ohne lokale Installation | Must |
-| F-92 | `npx project-memory-mcp init` richtet ein Projekt vollständig ein | Must |
-| F-93 | `package.json` enthält `files`-Feld: nur `dist/`, `hooks/` werden veröffentlicht | Must |
-| F-94 | Paket ist sprachagnostisch — kein Node.js im Zielprojekt erforderlich | Must |
+#### 6.1 npm Package & Distribution
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| F-90 | Package published to npm under the name `project-memory-mcp` | Must |
+| F-91 | `npx project-memory-mcp` starts the server without local installation | Must |
+| F-92 | `npx project-memory-mcp init` fully sets up a project | Must |
+| F-93 | `package.json` contains `files` field: only `dist/`, `hooks/` are published | Must |
+| F-94 | Package is language-agnostic — no Node.js required in the target project | Must |
 
 #### 6.2 Enhanced `init` Command
 
-| ID | Anforderung | Priorität |
-|----|-------------|-----------|
-| F-95 | `init` erstellt `.project-memory/config.yaml` mit kommentierten Defaults | Must |
-| F-96 | `init` trägt `.project-memory/embeddings.db` und `server.log` in `.gitignore` des Zielprojekts ein | Must |
-| F-97 | `init` registriert den MCP Server in `.mcp.json` des Zielprojekts (anlegen falls nicht vorhanden) | Must |
-| F-98 | `init` installiert den Post-Commit-Hook (bereits implementiert, F-40) | Must |
-| F-99 | `init` prüft ob Ollama verfügbar ist und führt `ollama pull <model>` aus wenn ja | Should |
-| F-100 | `init` ist idempotent — mehrfaches Ausführen verändert bestehende Konfiguration nicht | Must |
-| F-101 | `init` gibt einen klaren Schritt-für-Schritt-Output aus (was wurde gemacht / übersprungen) | Must |
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| F-95 | `init` creates `.project-memory/config.yaml` with commented defaults | Must |
+| F-96 | `init` adds `.project-memory/embeddings.db` and `server.log` to `.gitignore` of target project | Must |
+| F-97 | `init` registers the MCP server in `.mcp.json` of the target project (creates if not present) | Must |
+| F-98 | `init` installs the post-commit hook (already implemented, F-40) | Must |
+| F-99 | `init` checks if Ollama is available and runs `ollama pull <model>` if so | Should |
+| F-100 | `init` is idempotent — running multiple times does not alter existing configuration | Must |
+| F-101 | `init` prints clear step-by-step output (what was done / skipped) | Must |
 
-#### 6.3 Akzeptanzkriterien Phase 6
+#### 6.3 Acceptance Criteria Phase 6
 
-- [ ] `npx project-memory-mcp init` in einem leeren Verzeichnis legt alle nötigen Dateien an
-- [ ] `.mcp.json` wird korrekt erstellt/ergänzt — bestehende Server-Einträge bleiben erhalten
-- [ ] `.gitignore` wird korrekt ergänzt — bestehende Einträge bleiben erhalten
-- [ ] `npx project-memory-mcp` startet den Server ohne Build-Schritt im Zielprojekt
-- [ ] Der Flow funktioniert in einem Nicht-Node.js-Projekt (z.B. Go, Python)
+- [ ] `npx project-memory-mcp init` in an empty directory creates all required files
+- [ ] `.mcp.json` is correctly created/updated — existing server entries are preserved
+- [ ] `.gitignore` is correctly updated — existing entries are preserved
+- [ ] `npx project-memory-mcp` starts the server without a build step in the target project
+- [ ] The flow works in a non-Node.js project (e.g. Go, Python)
 
 ---
 
-## 9. Offene Fragen & Risiken
+## 9. Open Questions & Risks
 
-### Technische Risiken
+### Technical Risks
 
-| Risiko | Wahrscheinlichkeit | Impact | Mitigation |
-|--------|-------------------|--------|------------|
-| transformers.js zu langsam in Node.js (WASM) | Mittel | Hoch | Benchmark früh, ggf. auf Python-Sidecar ausweichen |
-| Ollama nicht auf Zielmaschine verfügbar | Hoch | Mittel | Keyword-Fallback (F-72) als Pflichtfeature |
-| SQLite Locking bei parallelen Zugriffen | Niedrig | Mittel | WAL-Mode aktivieren, Write-Queue implementieren |
-| MCP Resource-Größe überschreitet Kontextfenster | Mittel | Hoch | Zusammenfassungen kürzen, `top_k` limitieren |
-| Git-Hook überschreibt bestehende Hooks | Niedrig | Mittel | Hook-Chaining implementieren, nicht ersetzen |
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| transformers.js too slow in Node.js (WASM) | Medium | High | Benchmark early, fall back to Python sidecar if needed |
+| Ollama not available on target machine | High | Medium | Keyword fallback (F-72) as mandatory feature |
+| SQLite locking under concurrent access | Low | Medium | Enable WAL mode, implement write queue |
+| MCP resource size exceeds context window | Medium | High | Truncate summaries, limit `top_k` |
+| Git hook overwrites existing hooks | Low | Medium | Implement hook chaining, not replacement |
 
-### Architektur-Entscheidungen (noch offen)
+### Architecture Decisions (still open)
 
-1. **Embedding-Chunking:** Wie werden lange Memory-Einträge für Embeddings aufgeteilt? (Satz-Level vs. Abschnitt-Level)
-2. **Memory-Wachstum:** Ab welcher Dateigröße werden alte Einträge archiviert oder komprimiert?
-3. **Multi-Projekt-Support:** Ein Server pro Projekt (aktueller Plan) oder ein globaler Server mit Projekt-Namespacing?
-4. **Windows ohne WSL:** Native Windows-Unterstützung für Git-Hooks ist komplex — explizit ausschließen oder via PowerShell-Hook unterstützen?
+1. **Embedding chunking:** How are long memory entries split for embeddings? (sentence level vs. section level)
+2. **Memory growth:** At what file size are old entries archived or compressed?
+3. **Multi-project support:** One server per project (current plan) or one global server with project namespacing?
+4. **Windows without WSL:** Native Windows support for git hooks is complex — explicitly exclude or support via PowerShell hook?
 
-### Validierungsannahmen
+### Validation Assumptions
 
-- Ollama mit llama3.2 liefert ausreichend gute Summarizations für Commit-Diffs (muss empirisch validiert werden)
-- `all-MiniLM-L6-v2` Embeddings sind gut genug für Code-nahen Kontext (Alternative: `nomic-embed-text` via Ollama)
-- MCP Resources werden von Claude Code tatsächlich automatisch in den Kontext geladen (MCP-Spec-Verhalten muss verifiziert werden)
+- Ollama with llama3.2 produces sufficiently good summarizations for commit diffs (requires empirical validation)
+- `all-MiniLM-L6-v2` embeddings are good enough for code-adjacent context (alternative: `nomic-embed-text` via Ollama)
+- MCP resources are actually automatically loaded into context by Claude Code (MCP spec behavior needs verification)

@@ -37,7 +37,7 @@ export class OllamaService {
       throw new Error("Ollama is not available and fallback is disabled");
     }
 
-    const systemPrompt = prompt || "Summarize the following content concisely in German. Extract key decisions, changes, or insights. Return structured Markdown.";
+    const systemPrompt = prompt || "Summarize the following content concisely in English. Extract key decisions, changes, or insights. Return structured Markdown.";
 
     try {
       const controller = new AbortController();

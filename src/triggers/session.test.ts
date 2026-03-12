@@ -81,9 +81,9 @@ describe("SessionManager", () => {
     vi.advanceTimersByTime(61 * 1000);
 
     const content = fileService.read("progress");
-    expect(content).toContain("Datum:");
-    expect(content).toContain("Dauer:");
-    expect(content).toContain("Tool-Calls:");
+    expect(content).toContain("Date:");
+    expect(content).toContain("Duration:");
+    expect(content).toContain("Tool calls:");
     manager.close();
   });
 

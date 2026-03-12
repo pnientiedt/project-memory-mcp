@@ -19,12 +19,12 @@ export function registerWriteTools(
   server.registerTool(
     "add_decision",
     {
-      description: "Speichert eine Architekturentscheidung (ADR) in der persistenten Wissensbasis",
+      description: "Saves an architectural decision (ADR) to the persistent knowledge base",
       inputSchema: {
-        title: z.string().describe("Kurzer Titel der Entscheidung"),
-        context: z.string().describe("Problem / Ausgangssituation"),
-        decision: z.string().describe("Getroffene Entscheidung"),
-        consequences: z.string().optional().describe("Konsequenzen und Trade-offs"),
+        title: z.string().describe("Short title of the decision"),
+        context: z.string().describe("Problem / background situation"),
+        decision: z.string().describe("The decision that was made"),
+        consequences: z.string().optional().describe("Consequences and trade-offs"),
         status: z.enum(["proposed", "accepted", "deprecated"]).default("accepted"),
       },
     },
@@ -33,15 +33,15 @@ export function registerWriteTools(
         `## ${title}`,
         ``,
         `**Status:** ${status}`,
-        `**Kontext:** ${context}`,
-        `**Entscheidung:** ${decision}`,
-        consequences ? `**Konsequenzen:** ${consequences}` : "",
+        `**Context:** ${context}`,
+        `**Decision:** ${decision}`,
+        consequences ? `**Consequences:** ${consequences}` : "",
       ].filter(Boolean).join("\n");
 
       const written = fileService.append("decisions", entry);
       await autoEmbed("decisions", title, entry);
       return {
-        content: [{ type: "text" as const, text: `Entscheidung gespeichert:\n\n${written}` }],
+        content: [{ type: "text" as const, text: `Decision saved:\n\n${written}` }],
       };
     },
   );
@@ -50,12 +50,12 @@ export function registerWriteTools(
   server.registerTool(
     "log_tech_debt",
     {
-      description: "Erfasst technische Schulden oder bekannte Probleme",
+      description: "Records technical debt or known issues",
       inputSchema: {
-        description: z.string().describe("Beschreibung der technischen Schuld"),
+        description: z.string().describe("Description of the technical debt"),
         severity: z.enum(["low", "medium", "high", "critical"]),
-        affected_files: z.array(z.string()).optional().describe("Betroffene Dateien"),
-        ticket: z.string().optional().describe("Optionale Issue-Referenz"),
+        affected_files: z.array(z.string()).optional().describe("Affected files"),
+        ticket: z.string().optional().describe("Optional issue reference"),
       },
     },
     async ({ description, severity, affected_files, ticket }) => {
@@ -65,7 +65,7 @@ export function registerWriteTools(
         description,
       ];
       if (affected_files && affected_files.length > 0) {
-        lines.push(``, `**Betroffene Dateien:** ${affected_files.join(", ")}`);
+        lines.push(``, `**Affected Files:** ${affected_files.join(", ")}`);
       }
       if (ticket) {
         lines.push(`**Ticket:** ${ticket}`);
@@ -74,7 +74,7 @@ export function registerWriteTools(
       const written = fileService.append("tech_debt", entry);
       await autoEmbed("tech_debt", `Tech Debt [${severity}]`, entry);
       return {
-        content: [{ type: "text" as const, text: `Tech Debt erfasst:\n\n${written}` }],
+        content: [{ type: "text" as const, text: `Tech debt recorded:\n\n${written}` }],
       };
     },
   );
@@ -83,11 +83,11 @@ export function registerWriteTools(
   server.registerTool(
     "update_progress",
     {
-      description: "Aktualisiert den Projektfortschritt mit einem Meilenstein oder einer Statusänderung",
+      description: "Updates project progress with a milestone or status change",
       inputSchema: {
-        milestone: z.string().describe("Name des Meilensteins"),
+        milestone: z.string().describe("Name of the milestone"),
         status: z.enum(["planned", "in-progress", "done", "blocked"]),
-        description: z.string().optional().describe("Optionale Details"),
+        description: z.string().optional().describe("Optional details"),
       },
     },
     async ({ milestone, status, description }) => {
@@ -109,7 +109,7 @@ export function registerWriteTools(
       const written = fileService.append("progress", entry);
       await autoEmbed("progress", milestone, entry);
       return {
-        content: [{ type: "text" as const, text: `Fortschritt aktualisiert:\n\n${written}` }],
+        content: [{ type: "text" as const, text: `Progress updated:\n\n${written}` }],
       };
     },
   );
@@ -118,19 +118,19 @@ export function registerWriteTools(
   server.registerTool(
     "add_context",
     {
-      description: "Speichert Domain-Wissen, Konventionen oder sonstigen Freitext-Kontext",
+      description: "Saves domain knowledge, conventions, or other freeform context",
       inputSchema: {
-        content: z.string().describe("Zu speichernder Kontext"),
-        category: z.string().optional().describe("Kategorie-Tag (z.B. 'api', 'domain', 'convention')"),
+        content: z.string().describe("Context to save"),
+        category: z.string().optional().describe("Category tag (e.g. 'api', 'domain', 'convention')"),
       },
     },
     async ({ content, category }) => {
-      const header = category ? `## [${category}]` : "## Kontext";
+      const header = category ? `## [${category}]` : "## Context";
       const entry = `${header}\n\n${content}`;
       const written = fileService.append("context", entry);
-      await autoEmbed("context", category || "Kontext", entry);
+      await autoEmbed("context", category || "Context", entry);
       return {
-        content: [{ type: "text" as const, text: `Kontext gespeichert:\n\n${written}` }],
+        content: [{ type: "text" as const, text: `Context saved:\n\n${written}` }],
       };
     },
   );

@@ -68,14 +68,14 @@ describe("Read Tools", () => {
       expect(result.content[0].text).toContain("## Test Decision");
     });
 
-    it("returns (leer) for empty file", async () => {
+    it("returns (empty) for empty file", async () => {
       const { registerReadTools } = await import("./read.js");
       registerReadTools(mockServer as never, fileService);
       // Delete the default file to simulate empty
       fileService.write("context", "");
       const result = await mockServer.callTool("get_memory", { scope: "context" }) as { content: Array<{ text: string }> };
-      // empty string returns "(leer)"
-      expect(result.content[0].text).toContain("(leer)");
+      // empty string returns "(empty)"
+      expect(result.content[0].text).toContain("(empty)");
     });
   });
 
@@ -94,7 +94,7 @@ describe("Read Tools", () => {
       const { registerReadTools } = await import("./read.js");
       registerReadTools(mockServer as never, fileService, stub);
       const result = await mockServer.callTool("search_memory", { query: "nothing", scope: "all", top_k: 5 }) as { content: Array<{ text: string }> };
-      expect(result.content[0].text).toContain("Keine Ergebnisse");
+      expect(result.content[0].text).toContain("No results found");
     });
 
     it("falls back to keyword search without embedding service", async () => {
@@ -109,7 +109,7 @@ describe("Read Tools", () => {
       const { registerReadTools } = await import("./read.js");
       registerReadTools(mockServer as never, fileService);
       const result = await mockServer.callTool("search_memory", { query: "xyznotfound", scope: "all", top_k: 5 }) as { content: Array<{ text: string }> };
-      expect(result.content[0].text).toContain("Keine Ergebnisse");
+      expect(result.content[0].text).toContain("No results found");
     });
   });
 });

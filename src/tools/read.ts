@@ -13,15 +13,15 @@ export function registerReadTools(
   server.registerTool(
     "get_memory",
     {
-      description: "Liest den Inhalt einer Memory-Datei direkt",
+      description: "Reads the contents of a memory file directly",
       inputSchema: {
-        scope: z.enum(["decisions", "tech_debt", "progress", "context"]).describe("Welche Memory-Datei lesen"),
+        scope: z.enum(["decisions", "tech_debt", "progress", "context"]).describe("Which memory file to read"),
       },
     },
     async ({ scope }) => {
       const content = fileService.read(scope as MemoryScope);
       return {
-        content: [{ type: "text" as const, text: content || "(leer)" }],
+        content: [{ type: "text" as const, text: content || "(empty)" }],
       };
     },
   );
@@ -30,9 +30,9 @@ export function registerReadTools(
   server.registerTool(
     "search_memory",
     {
-      description: "Semantische Suche in der gesamten Wissensbasis",
+      description: "Semantic search across the entire knowledge base",
       inputSchema: {
-        query: z.string().describe("Suchanfrage in natürlicher Sprache"),
+        query: z.string().describe("Search query in natural language"),
         scope: z.enum(["decisions", "tech_debt", "progress", "context", "all"]).default("all"),
         top_k: z.number().int().min(1).max(20).default(5),
       },
@@ -42,7 +42,7 @@ export function registerReadTools(
         // Semantic search via embeddings (F-30, F-31, F-33)
         const results = await embeddingService.search(query, scope as MemoryScope | "all", top_k);
         if (results.length === 0) {
-          return { content: [{ type: "text" as const, text: `Keine Ergebnisse für "${query}" gefunden.` }] };
+          return { content: [{ type: "text" as const, text: `No results found for "${query}".` }] };
         }
         const text = results
           .map(r => `**[${r.source_file}/${r.section}]** (score: ${r.score.toFixed(3)})\n${r.content}`)
@@ -70,7 +70,7 @@ export function registerReadTools(
 
       const text = results.length > 0
         ? results.join("\n\n")
-        : `Keine Ergebnisse für "${query}" gefunden.`;
+        : `No results found for "${query}".`;
 
       return { content: [{ type: "text" as const, text }] };
     },

@@ -1,23 +1,23 @@
 # project-memory-mcp
 
-Persistente AI Wissensbasis für Claude via Model Context Protocol — vollständig offline, kein Cloud-API-Key erforderlich.
+Persistent AI knowledge base for Claude via Model Context Protocol — fully offline, no cloud API key required.
 
-Speichert Architekturentscheidungen, technische Schulden, Projektfortschritt und Domain-Wissen in versionierten Markdown-Dateien. Claude liest diese Dateien automatisch über MCP Resources und schreibt neue Einträge über MCP Tools.
+Stores architectural decisions, technical debt, project progress, and domain knowledge in versioned Markdown files. Claude reads these files automatically via MCP Resources and writes new entries via MCP Tools.
 
 ## Features
 
-- **4 MCP Resources** — Claude liest `memory://decisions`, `memory://tech-debt`, `memory://progress`, `memory://context` automatisch beim Start der Session
+- **4 MCP Resources** — Claude reads `memory://decisions`, `memory://tech-debt`, `memory://progress`, `memory://context` automatically at session start
 - **5 MCP Tools** — `add_decision`, `log_tech_debt`, `update_progress`, `add_context`, `search_memory`, `reindex_memory`
-- **Semantische Suche** — Embedding-basierte Suche via `@huggingface/transformers` (all-MiniLM-L6-v2) lokal in SQLite
-- **Git-Hook** — Post-Commit Hook sendet Diff + Message an Ollama zur automatischen Zusammenfassung
-- **Filesystem-Watcher** — Änderungen an `CLAUDE.md`, `docs/adr/` usw. triggern Memory-Update
-- **Session-Zusammenfassung** — Inaktivitäts-Timer schreibt Session-Summary in `progress.md`
-- **Ollama-Fallback** — Keyword-Extraktion wenn Ollama nicht verfügbar
+- **Semantic Search** — Embedding-based search via `@huggingface/transformers` (all-MiniLM-L6-v2) stored locally in SQLite
+- **Git Hook** — Post-commit hook sends diff + message to Ollama for automatic summarization and auto-commits the updated memory files
+- **Filesystem Watcher** — Changes to `CLAUDE.md`, `docs/adr/`, etc. trigger memory updates
+- **Session Summary** — Inactivity timer writes a session summary to `progress.md`
+- **Ollama Fallback** — Keyword extraction when Ollama is unavailable
 
-## Voraussetzungen
+## Prerequisites
 
 - Node.js >= 20
-- [Ollama](https://ollama.ai) (optional, für automatische Summarization)
+- [Ollama](https://ollama.ai) (optional, for automatic summarization)
 
 ```bash
 ollama pull llama3.2
@@ -25,12 +25,27 @@ ollama pull llama3.2
 
 ## Installation
 
+### In a new project (recommended)
+
+```bash
+npx project-memory-mcp init
+```
+
+This sets up everything automatically:
+- Creates `.project-memory/config.yaml` with documented defaults
+- Adds `project-memory` entry to `.mcp.json`
+- Updates `.gitignore` with database/log exclusions
+- Installs the git post-commit hook
+- Pulls `llama3.2` if Ollama is running
+
+### From source
+
 ```bash
 npm install
 npm run build
 ```
 
-MCP Server in Claude Code registrieren (`.mcp.json` bereits vorkonfiguriert):
+Register the MCP server in Claude Code (`.mcp.json` already pre-configured):
 
 ```json
 {
@@ -43,28 +58,22 @@ MCP Server in Claude Code registrieren (`.mcp.json` bereits vorkonfiguriert):
 }
 ```
 
-Git-Hook installieren:
+## Usage
 
-```bash
-node dist/index.js init
-```
-
-## Verwendung
-
-Nach dem Start liest Claude die Memory-Dateien automatisch. Neue Einträge werden über Tools geschrieben:
+After startup Claude reads the memory files automatically. New entries are written via tools:
 
 ```
-add_decision    — Architekturentscheidung (ADR-Format) speichern
-log_tech_debt   — Technische Schuld erfassen
-update_progress — Meilenstein aktualisieren
-add_context     — Domain-Wissen / Konventionen speichern
-search_memory   — Semantisch in der Wissensbasis suchen
-reindex_memory  — Embedding-Index neu aufbauen
+add_decision    — Save an architectural decision (ADR format)
+log_tech_debt   — Record technical debt
+update_progress — Update a milestone
+add_context     — Save domain knowledge / conventions
+search_memory   — Semantic search across the knowledge base
+reindex_memory  — Rebuild the embedding index
 ```
 
-## Konfiguration
+## Configuration
 
-`.project-memory/config.yaml` (wird beim ersten Start mit Defaults angelegt):
+`.project-memory/config.yaml` (created with defaults on first run):
 
 ```yaml
 ollama:
@@ -92,60 +101,61 @@ session:
   summarize_on_end: true
 ```
 
-Environment Variables überschreiben Config:
+Environment variables override config:
 
-| Variable | Überschreibt |
-|----------|-------------|
+| Variable | Overrides |
+|----------|-----------|
 | `PMM_OLLAMA_URL` | `ollama.base_url` |
 | `PMM_OLLAMA_MODEL` | `ollama.model` |
 | `PMM_HOOK_PORT` | `git.hook_port` |
 | `PMM_LOG_LEVEL` | `logging.level` |
 
-## Memory-Dateien
+## Memory Files
 
-Liegen in `.project-memory/` und werden im Git versioniert (außer `embeddings.db` und `server.log`):
+Located in `.project-memory/` and versioned in git (except `embeddings.db` and `server.log`):
 
-| Datei | Inhalt |
-|-------|--------|
-| `decisions.md` | Architekturentscheidungen (ADRs) |
-| `tech_debt.md` | Technische Schulden |
-| `progress.md` | Projektfortschritt & Session-Summaries |
-| `context.md` | Domain-Wissen & Konventionen |
+| File | Contents |
+|------|----------|
+| `decisions.md` | Architectural decisions (ADRs) |
+| `tech_debt.md` | Technical debt |
+| `progress.md` | Project progress & session summaries |
+| `context.md` | Domain knowledge & conventions |
 
-## Entwicklung
+## Development
 
 ```bash
-npm test              # Tests ausführen (79 Tests)
-npm run test:coverage # Coverage-Report (83% Line Coverage)
-npm run build         # TypeScript kompilieren
-npm run typecheck     # Nur Typprüfung
+npm test              # Run tests (79 tests)
+npm run test:coverage # Coverage report (83% line coverage)
+npm run build         # Compile TypeScript
+npm run typecheck     # Type check only
+npm run release       # typecheck + test + build + npm publish
 ```
 
-## Projektstruktur
+## Project Structure
 
 ```
 src/
-  index.ts              # Einstiegspunkt, stdio Transport
-  server.ts             # MCP Server Factory
-  config.ts             # Konfiguration laden & validieren (zod)
-  types.ts              # Gemeinsame TypeScript-Typen
+  index.ts              # Entry point, stdio transport
+  server.ts             # MCP server factory
+  config.ts             # Load & validate configuration (zod)
+  types.ts              # Shared TypeScript types
   resources/
-    memory.ts           # MCP Resources (memory://)
+    memory.ts           # MCP resources (memory://)
   tools/
     write.ts            # add_decision, log_tech_debt, update_progress, add_context
     read.ts             # get_memory, search_memory
     admin.ts            # reindex_memory
   services/
-    file.ts             # Atomares Read/Write der Memory-Dateien
+    file.ts             # Atomic read/write of memory files
     embedding.ts        # transformers.js + cosine similarity
-    db.ts               # SQLite Schema (WAL-Mode)
-    ollama.ts           # Ollama HTTP Client + Keyword-Fallback
-    summarization.ts    # Prompts pro Memory-Kategorie
-    git.ts              # simple-git Integration
+    db.ts               # SQLite schema (WAL mode)
+    ollama.ts           # Ollama HTTP client + keyword fallback
+    summarization.ts    # Prompts per memory category
+    git.ts              # simple-git integration
   triggers/
-    git-hook.ts         # HTTP Server für Post-Commit Hook
-    watcher.ts          # Filesystem Watcher (chokidar)
-    session.ts          # Inaktivitäts-Timer & Session-Summary
+    git-hook.ts         # HTTP server for post-commit hook
+    watcher.ts          # Filesystem watcher (chokidar)
+    session.ts          # Inactivity timer & session summary
 hooks/
-  post-commit           # Shell-Script für Git Hook
+  post-commit           # Shell script for git hook
 ```

@@ -15,7 +15,7 @@ export function registerAdminTools(
   server.registerTool(
     "reindex_memory",
     {
-      description: "Re-indexiert alle Memory-Dateien in der Embedding-Datenbank",
+      description: "Re-indexes all memory files in the embedding database",
       inputSchema: {
         scope: z.enum(["all", "decisions", "tech_debt", "progress", "context"]).default("all"),
       },
@@ -35,7 +35,7 @@ export function registerAdminTools(
       }
 
       return {
-        content: [{ type: "text" as const, text: `Re-indexiert: ${total} Abschnitte in ${scopes.join(", ")}.` }],
+        content: [{ type: "text" as const, text: `Re-indexed: ${total} sections in ${scopes.join(", ")}.` }],
       };
     },
   );

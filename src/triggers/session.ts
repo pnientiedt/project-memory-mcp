@@ -65,22 +65,22 @@ export class SessionManager {
     const lines = [
       `## 📋 Session Summary — ${date}`,
       ``,
-      `**Datum:** ${endTime.toISOString()}`,
-      `**Dauer:** ${durationMin} Minuten`,
-      `**Tool-Calls:** ${this.toolCalls.length}`,
+      `**Date:** ${endTime.toISOString()}`,
+      `**Duration:** ${durationMin} minutes`,
+      `**Tool calls:** ${this.toolCalls.length}`,
     ];
 
     if (this.changedFiles.size > 0) {
-      lines.push(`**Geänderte Dateien:** ${[...this.changedFiles].join(", ")}`);
+      lines.push(`**Changed files:** ${[...this.changedFiles].join(", ")}`);
     }
 
     if (this.decisions.length > 0) {
-      lines.push(`**Entscheidungen:** ${this.decisions.join("; ")}`);
+      lines.push(`**Decisions:** ${this.decisions.join("; ")}`);
     }
 
     const tools = [...new Set(this.toolCalls.map(c => c.tool))];
     if (tools.length > 0) {
-      lines.push(`**Verwendete Tools:** ${tools.join(", ")}`);
+      lines.push(`**Tools used:** ${tools.join(", ")}`);
     }
 
     return lines.join("\n");
