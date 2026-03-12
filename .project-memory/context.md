@@ -90,3 +90,235 @@ Excluded: `embeddings.db`, `server.log`
 - **Key completed epics:** `scaile-*` (full initial implementation + npm packaging), `pmm-sks` (upsert support for write tools + FileService).
 - **Known sensitive areas:** `hooks/post-commit` shell script has had injection vulnerabilities fixed — do not simplify it; `src/services/summarization.ts` Ollama prompts are carefully calibrated — change cautiously.
 - **Issue tracking:** Beads (`bd` CLI), prefix `pmm-*`.
+<!-- date:2026-03-12 hash:daddcdd50041 -->
+## Project Memory-MCP
+
+### Overview
+
+The project-memory-mcp is a persistent AI knowledge base for Claude via Model Context Protocol. It stores architectural decisions, technical debt, project progress, and domain knowledge in versioned Markdown files.
+
+### Features
+
+*   4 MCP Resources: Claude reads `memory://decisions`, `memory://tech-debt`, `memory://progress`, and `memory://context` automatically at session start.
+*   7 MCP Tools: `add_decision`, `log_tech_debt`, `update_progress`, `add_context`, `get_memory`, `search_memory`, and `reindex_memory` for writing new entries.
+*   Semantic Search: Embedding-based search via `@huggingface/transformers` (all-MiniLM-L6-v2) stored locally in SQLite.
+*   Git Hook: Post-commit hook sends diff + message to Ollama for automatic summarization and auto-commits the updated memory files.
+*   Filesystem Watcher: Changes to `CLAUDE.md`, `docs/adr/`, etc., trigger memory updates.
+*   Session Summary: Inactivity timer writes a session summary to `progress.md`.
+*   Ollama Fallback: Keyword extraction when Ollama is unavailable.
+
+### Prerequisites
+
+*   Node.js >= 20
+*   [Ollama](https://ollama.ai) (optional, for automatic summarization)
+
+### Installation
+
+#### In a new project (recommended)
+
+```bash
+npx @pnientiedt/project-memory-mcp init
+```
+
+This sets up everything automatically, including creating `.project-memory/config.yaml` with documented defaults, adding `project-memory` entry to `.mcp.json`, updating `.gitignore` with database/log exclusions, installing the git post-commit hook, and pulling `llama3.2` if Ollama is running.
+
+#### From source
+
+```bash
+npm install
+npm run build
+```
+
+Register the MCP server in Claude Code (`.mcp.json` already pre-configured):
+
+```json
+{
+  "mcpServers": {
+    "project-memory": {
+      "command": "npx",
+      "args": ["@pnientiedt/project-memory-mcp"]
+    }
+  }
+}
+```
+
+### Usage
+
+After startup Claude reads the memory files automatically. New entries are written via tools:
+
+*   `add_decision`: Save an architectural decision (ADR format); upsert=true to replace existing.
+*   `log_tech_debt`: Record technical debt; upsert=true to replace existing.
+*   `update_progress`: Update a milestone; upsert=true to replace existing.
+*   `add_context`: Save domain knowledge / conventions; upsert=true to replace existing.
+*   `get_memory`: Read a memory file directly.
+*   `search_memory`: Semantic search across the knowledge base.
+*   `reindex_memory`: Rebuild the embedding index.
+
+### Configuration
+
+`.project-memory/config.yaml` (created with defaults on first run):
+
+```yaml
+ollama:
+  base_url: "http://localhost:11434"
+  model: "llama3.2"
+  timeout_seconds: 60
+  fallback_to_keywords: true
+
+embeddings:
+  model: "Xenova/all-MiniLM-L6-v2"
+  db_path: ".project-memory/embeddings.db"
+
+git:
+  hook_enabled: true
+  hook_port: 47832
+  skip_keyword: "[skip-memory]"
+
+watcher:
+  enabled: true
+  paths: ["CLAUDE.md", "docs/adr/", "README.md"]
+  debounce_ms: 2000
+
+session:
+  inactivity_timeout_minutes: 30
+  summarize_on_end: true
+```
+
+Environment variables override config:
+
+| Variable | Overrides |
+|----------|-----------|
+| `PMM_OLLAMA_URL` | `ollama.base_url` |
+| `PMM_OLLAMA_MODEL` | `ollama.model` |
+| `PMM_HOOK_PORT` | `git.hook_port` |
+| `PMM_LOG_LEVEL` | `logging.level` |
+
+### Memory Files
+
+Located in `.project-memory/` and versioned in git (except `embeddings.db` and `server.log`):
+
+| File | Contents |
+|------|----------|
+| `decisions.md` | Architectural decisions (ADRs) |
+| `tech_debt.md` | Technical debt |
+| `progress.md` | Project progress & session summaries |
+| `context.md` | Domain knowledge & conventions |
+
+### Development
+
+```bash
+npm test              # Run tests (79 tests)
+npm run test:coverage # Coverage report (83% line coverage)
+npm run build         # Compile TypeScript
+npm run typecheck     # Type check only
+npm run release       # typecheck + test + build + npm publish
+```
+
+### Project Structure
+
+```
+src/
+  index.ts              # Entry point, stdio transport
+  server.ts             # MCP server factory
+  config.ts             # Load & validate configuration (zod)
+  types.ts              # Shared TypeScript types
+  resources/
+    memory.ts           # MCP resources (memory://)
+  tools/
+    write.ts            # add_decision, log_tech_debt, update_progress, add_context
+    read.ts             # get_memory, search_memory
+    admin.ts            # reindex_memory
+  services/
+    file.ts             # Atomic read/write of memory files
+    embedding.ts        # transformers.js + cosine similarity
+    db.ts               # SQLite schema (WAL mode)
+    ollama.ts           # Ollama HTTP client + keyword fallback
+    summarization.ts    # Prompts per memory category
+    git.ts              # simple-git integration
+  triggers/
+    git-hook.ts         # HTTP server for post-commit hook
+    watcher.ts          # Filesystem watcher (chokidar)
+    session.ts          # Inactivity timer & session summary
+hooks/
+  post-commit           # Shell script for git hook
+```
+
+This project is designed to be a persistent AI knowledge base for Claude via Model Context Protocol. It stores architectural decisions, technical debt, project progress, and domain knowledge in versioned Markdown files. The project includes various features such as semantic search, Git hooks, and a filesystem watcher to update the knowledge base automatically. The project structure is organized into different files and folders, each with their own specific functionality.
+<!-- date:2026-03-12 hash:6d82d9f42ca9 -->
+## Project Memory MCP
+
+### Overview
+
+Project Memory MCP is a persistent AI knowledge base for Claude, a project management tool, using the Model Context Protocol (MCP). This system stores architectural decisions, technical debt, project progress, and domain knowledge in versioned Markdown files, allowing for automatic reading and writing of data via MCP Resources and Tools.
+
+### Features
+
+* 4 MCP Resources: Automatically read `memory://decisions`, `memory://tech-debt`, `memory://progress`, and `memory://context` at session start.
+* 7 MCP Tools: Provide commands for adding decisions, logging technical debt, updating progress, adding context, retrieving memory, searching memory, reindexing memory, and more.
+* Semantic Search: Embedding-based search using `@huggingface/transformers` (all-MiniLM-L6-v2) stored locally in SQLite.
+* Git Hook: Post-commit hook sends diff + message to Ollama for automatic summarization and auto-commits updated memory files.
+* Filesystem Watcher: Triggers memory updates when changes are detected in `CLAUDE.md`, `docs/adr/`, etc.
+* Session Summary: Writes a session summary to `progress.md` when inactivity timer expires.
+* Ollama Fallback: Keyword extraction when Ollama is unavailable.
+
+### Prerequisites
+
+* Node.js 20 or higher
+* Ollama (optional, for automatic summarization)
+
+### Installation
+
+#### In a new project (recommended)
+
+```bash
+npx @pnientiedt/project-memory-mcp init
+```
+
+This sets up everything automatically, including creating the `.project-memory/config.yaml` file, adding the project to the MCP server, and installing the git post-commit hook.
+
+#### From source
+
+```bash
+npm install
+npm run build
+```
+
+Register the MCP server in Claude Code by modifying the `.mcp.json` file.
+
+### Usage
+
+After startup, Claude reads the memory files automatically. New entries are written via the MCP Tools.
+
+### Configuration
+
+The configuration is stored in the `.project-memory/config.yaml` file. Environment variables can override the config.
+
+### Memory Files
+
+The memory files are located in the `.project-memory/` directory and are versioned in git (except `embeddings.db` and `server.log`).
+
+### Development
+
+```bash
+npm test              # Run tests (79 tests)
+npm run test:coverage # Coverage report (83% line coverage)
+npm run build         # Compile TypeScript
+npm run typecheck     # Type check only
+npm run release       # typecheck + test + build + npm publish
+```
+
+### Project Structure
+
+The project structure is organized as follows:
+
+* `src/`: Source code
+	+ `index.ts`: Entry point, stdio transport
+	+ `server.ts`: MCP server factory
+	+ `config.ts`: Load and validate configuration (zod)
+	+ `types.ts`: Shared TypeScript types
+	+ `resources/`: MCP resources (memory://)
+	+ `tools/`: MCP tools
+	+ `services/`: Services for managing memory files, embeddings, and more
+	+ `triggers/`: Triggers for the git hook, watcher, and session summary
+	+ `hooks/`: Shell script for the post-commit hook
+```
