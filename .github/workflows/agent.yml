@@ -26,6 +26,9 @@ on:
           - default
           - acceptEdits
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   run-agent:
     name: Run Claude Agent
