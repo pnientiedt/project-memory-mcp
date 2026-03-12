@@ -14,7 +14,13 @@ dist/
 
 # project-memory-mcp: keep *.md, ignore db and logs
 .project-memory/embeddings.db
+.project-memory/embeddings.db-shm
+.project-memory/embeddings.db-wal
 .project-memory/server.log
+.project-memory/config.yaml
+
+# Beads lock files
+.beads/dolt-monitor.pid.lock
 
 # Generated output
 coverage/
