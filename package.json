@@ -1,11 +1,35 @@
 {
   "name": "project-memory-mcp",
   "version": "0.1.0",
-  "description": "Persistente AI Wissensbasis via Model Context Protocol",
+  "description": "Persistent AI knowledge base for Claude via Model Context Protocol — fully offline, no cloud API key required",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "project-memory-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "hooks/"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "ai",
+    "knowledge-base",
+    "memory",
+    "ollama",
+    "embeddings",
+    "semantic-search"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/project-memory-mcp.git"
+  },
+  "homepage": "https://github.com/your-org/project-memory-mcp#readme",
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc",

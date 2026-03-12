@@ -1,0 +1,26 @@
+# Source files (only dist/ is published)
+src/
+*.test.ts
+tsconfig.json
+vitest.config.ts
+eslint.config.js
+
+# Development & CI
+coverage/
+.agent-output/
+.beads/
+.claude/
+.dolt/
+
+# Project-specific runtime data
+.project-memory/
+
+# Config files not needed at runtime
+CLAUDE.md
+requirements.md
+activity.md
+.mcp.json
+
+# Misc
+*.log
+*.db
