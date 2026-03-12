@@ -10,7 +10,8 @@ if (process.argv[2] === "init") {
   process.exit(0);
 }
 
-const { mcp, config } = createServer();
+const server = createServer();
+const { mcp, config } = server;
 
 // Structured JSON logging to file (F-04)
 const logDir = config.memory.base_dir;
@@ -25,17 +26,16 @@ function log(level: string, message: string, data?: unknown): void {
 }
 
 // Graceful shutdown (F-05)
-process.on("SIGTERM", () => {
-  log("info", "Received SIGTERM, shutting down");
-  logStream.end();
-  mcp.close().then(() => process.exit(0));
-});
+const shutdown = () => {
+  log("info", "Shutting down gracefully");
+  server.close().then(() => {
+    logStream.end();
+    process.exit(0);
+  });
+};
 
-process.on("SIGINT", () => {
-  log("info", "Received SIGINT, shutting down");
-  logStream.end();
-  mcp.close().then(() => process.exit(0));
-});
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 
 log("info", "Starting project-memory-mcp server", { version: "0.1.0" });
 

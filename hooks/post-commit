@@ -1,0 +1,55 @@
+#!/bin/sh
+# project-memory-mcp post-commit hook
+# Sends commit diff and message to MCP server for memory update (F-41)
+# Runs asynchronously — does not block git commit (F-43)
+
+COMMIT_MSG=$(git log -1 --pretty=%B 2>/dev/null || echo "")
+PORT="${PMM_HOOK_PORT:-47832}"
+
+# Skip if [skip-memory] in commit message (F-42)
+case "$COMMIT_MSG" in
+  *"[skip-memory]"*) exit 0 ;;
+esac
+
+# Check if curl is available
+if ! command -v curl >/dev/null 2>&1; then
+  exit 0
+fi
+
+# Extract diff and changed files
+DIFF=$(git diff HEAD~1 HEAD --stat 2>/dev/null || git diff --cached --stat 2>/dev/null || echo "")
+CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | tr '\n' ',' | sed 's/,$//')
+TIMESTAMP=$(date +%s 2>/dev/null || echo "0")
+
+# Encode to JSON safely using python3 (available on macOS/Linux)
+if command -v python3 >/dev/null 2>&1; then
+  PAYLOAD=$(python3 -c "
+import json, sys
+msg = sys.stdin.readline().rstrip('\n')
+diff = sys.stdin.read()
+files = '$CHANGED_FILES'.split(',') if '$CHANGED_FILES' else []
+print(json.dumps({
+    'event': 'post-commit',
+    'message': msg,
+    'diff': diff,
+    'changed_files': [f for f in files if f],
+    'timestamp': int('$TIMESTAMP')
+}))
+" <<EOF
+$COMMIT_MSG
+$DIFF
+EOF
+)
+else
+  # Minimal fallback without Python
+  PAYLOAD="{\"event\":\"post-commit\",\"message\":\"$COMMIT_MSG\",\"diff\":\"\",\"changed_files\":[],\"timestamp\":$TIMESTAMP}"
+fi
+
+# Send async — & ensures it doesn't block git commit (F-43)
+curl -s --max-time 5 \
+  -X POST "http://localhost:${PORT}/internal/git-event" \
+  -H "Content-Type: application/json" \
+  -d "$PAYLOAD" \
+  >/dev/null 2>&1 &
+
+exit 0
