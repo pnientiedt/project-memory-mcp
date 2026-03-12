@@ -2,12 +2,14 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { FileService } from "../services/file.js";
 import type { EmbeddingService } from "../services/embedding.js";
+import type { SessionManager } from "../triggers/session.js";
 import type { MemoryScope } from "../types.js";
 
 export function registerReadTools(
   server: McpServer,
   fileService: FileService,
   embeddingService?: EmbeddingService,
+  sessionManager?: SessionManager,
 ): void {
   // get_memory: direct read access to a memory file
   server.registerTool(
@@ -19,6 +21,7 @@ export function registerReadTools(
       },
     },
     async ({ scope }) => {
+      sessionManager?.recordActivity("get_memory");
       const content = fileService.read(scope as MemoryScope);
       return {
         content: [{ type: "text" as const, text: content || "(empty)" }],
@@ -38,6 +41,7 @@ export function registerReadTools(
       },
     },
     async ({ query, scope, top_k }) => {
+      sessionManager?.recordActivity("search_memory");
       if (embeddingService) {
         // Semantic search via embeddings (F-30, F-31, F-33)
         const results = await embeddingService.search(query, scope as MemoryScope | "all", top_k);

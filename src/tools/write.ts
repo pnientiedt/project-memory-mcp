@@ -3,12 +3,14 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { FileService } from "../services/file.js";
 import type { EmbeddingService } from "../services/embedding.js";
 import { contentId } from "../services/embedding.js";
+import type { SessionManager } from "../triggers/session.js";
 import type { MemoryScope } from "../types.js";
 
 export function registerWriteTools(
   server: McpServer,
   fileService: FileService,
   embeddingService?: EmbeddingService,
+  sessionManager?: SessionManager,
 ): void {
   async function autoEmbed(scope: MemoryScope, section: string, content: string): Promise<void> {
     if (!embeddingService) return;
@@ -40,6 +42,7 @@ export function registerWriteTools(
 
       const written = fileService.append("decisions", entry);
       await autoEmbed("decisions", title, entry);
+      sessionManager?.recordActivity("add_decision", undefined, title);
       return {
         content: [{ type: "text" as const, text: `Decision saved:\n\n${written}` }],
       };
@@ -73,6 +76,7 @@ export function registerWriteTools(
       const entry = lines.join("\n");
       const written = fileService.append("tech_debt", entry);
       await autoEmbed("tech_debt", `Tech Debt [${severity}]`, entry);
+      sessionManager?.recordActivity("log_tech_debt");
       return {
         content: [{ type: "text" as const, text: `Tech debt recorded:\n\n${written}` }],
       };
@@ -108,6 +112,7 @@ export function registerWriteTools(
       const entry = lines.join("\n");
       const written = fileService.append("progress", entry);
       await autoEmbed("progress", milestone, entry);
+      sessionManager?.recordActivity("update_progress");
       return {
         content: [{ type: "text" as const, text: `Progress updated:\n\n${written}` }],
       };
@@ -129,6 +134,7 @@ export function registerWriteTools(
       const entry = `${header}\n\n${content}`;
       const written = fileService.append("context", entry);
       await autoEmbed("context", category || "Context", entry);
+      sessionManager?.recordActivity("add_context");
       return {
         content: [{ type: "text" as const, text: `Context saved:\n\n${written}` }],
       };

@@ -53,6 +53,8 @@ export class SessionManager {
    * Generate and write session summary when session ends (F-51, F-52).
    */
   private onSessionEnd(): void {
+    if (this.toolCalls.length === 0) return; // skip probe-only sessions
+
     const now = new Date();
     const durationMs = now.getTime() - this.sessionStart.getTime();
     const durationMin = Math.round(durationMs / 60000);

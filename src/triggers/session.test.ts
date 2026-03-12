@@ -44,6 +44,7 @@ describe("SessionManager", () => {
     config.session.inactivity_timeout_minutes = 1;
     const manager = new SessionManager(config.session, fileService);
 
+    manager.recordActivity("add_decision");
     vi.advanceTimersByTime(60 * 1000 + 100);
 
     const content = fileService.read("progress");

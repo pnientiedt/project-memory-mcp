@@ -46,8 +46,8 @@ export function createServer(configPath?: string): ProjectMemoryServer {
   );
 
   registerMemoryResources(mcp, fileService);
-  registerWriteTools(mcp, fileService, embeddingService);
-  registerReadTools(mcp, fileService, embeddingService);
+  registerWriteTools(mcp, fileService, embeddingService, sessionManager);
+  registerReadTools(mcp, fileService, embeddingService, sessionManager);
   registerAdminTools(mcp, fileService, embeddingService);
 
   let stopGitHook: (() => void) | undefined;
