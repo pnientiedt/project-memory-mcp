@@ -10,6 +10,7 @@ import { registerAdminTools } from "./tools/admin.js";
 import { startGitHookServer } from "./triggers/git-hook.js";
 import { startWatcher } from "./triggers/watcher.js";
 import { SessionManager } from "./triggers/session.js";
+import { DeduplicationService } from "./services/dedup.js";
 import type { Logger, ServerConfig } from "./types.js";
 
 export interface ProjectMemoryServer {
@@ -33,6 +34,7 @@ export function createServer(configPath?: string, logger?: Logger): ProjectMemor
     config.embeddings.model,
   );
   const ollamaService = new OllamaService(config.ollama);
+  const deduplicationService = new DeduplicationService(fileService, embeddingService, ollamaService);
   const sessionManager = new SessionManager(config.session, fileService, config.git.skip_keyword);
 
   const mcp = new McpServer(
@@ -46,7 +48,7 @@ export function createServer(configPath?: string, logger?: Logger): ProjectMemor
   );
 
   registerMemoryResources(mcp, fileService);
-  registerWriteTools(mcp, fileService, embeddingService, sessionManager);
+  registerWriteTools(mcp, fileService, embeddingService, sessionManager, deduplicationService);
   registerReadTools(mcp, fileService, embeddingService, sessionManager);
   registerAdminTools(mcp, fileService, embeddingService);
 

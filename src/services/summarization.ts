@@ -56,6 +56,27 @@ If there is no new domain knowledge to extract (e.g. the file is documentation, 
 Content:`,
 };
 
+const MERGE_PROMPT = `You are a technical knowledge curator. You have been given two memory entries that cover the same topic and must be merged into a single canonical Markdown entry.
+
+Rules:
+- Preserve ALL unique information from both entries
+- Eliminate exact or near-exact duplicate statements
+- Keep the most specific and accurate version of any conflicting facts
+- Start the output with "## " (the H2 title)
+- Keep the merged entry concise but complete
+- Preserve status fields, severities, and other structured data
+
+Output ONLY the merged Markdown entry — no preamble, no explanation.`;
+
+export async function mergeEntries(
+  ollamaService: OllamaService,
+  entryA: string,
+  entryB: string,
+): Promise<string> {
+  const text = `Entry A:\n${entryA}\n\n---\n\nEntry B:\n${entryB}`;
+  return ollamaService.summarize(text, MERGE_PROMPT);
+}
+
 export async function summarizeForScope(
   ollamaService: OllamaService,
   text: string,

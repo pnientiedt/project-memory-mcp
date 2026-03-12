@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { FileService } from "../services/file.js";
 import type { EmbeddingService } from "../services/embedding.js";
 import { contentId } from "../services/embedding.js";
+import type { DeduplicationService } from "../services/dedup.js";
 import type { SessionManager } from "../triggers/session.js";
 import type { MemoryScope } from "../types.js";
 
@@ -11,11 +12,17 @@ export function registerWriteTools(
   fileService: FileService,
   embeddingService?: EmbeddingService,
   sessionManager?: SessionManager,
+  deduplicationService?: DeduplicationService,
 ): void {
   async function autoEmbed(scope: MemoryScope, section: string, content: string): Promise<void> {
     if (!embeddingService) return;
     const id = contentId(scope, section, content);
     await embeddingService.embed(id, scope, section, content).catch(() => {/* non-blocking */});
+  }
+
+  function autoDedup(scope: MemoryScope, section: string): void {
+    if (!deduplicationService) return;
+    deduplicationService.runForScope(scope, section).catch(() => {/* non-blocking */});
   }
   // add_decision (F-20)
   server.registerTool(
@@ -42,6 +49,7 @@ export function registerWriteTools(
 
       const written = fileService.append("decisions", entry);
       await autoEmbed("decisions", title, entry);
+      autoDedup("decisions", title);
       sessionManager?.recordActivity("add_decision", undefined, title);
       return {
         content: [{ type: "text" as const, text: `Decision saved:\n\n${written}` }],
@@ -79,6 +87,7 @@ export function registerWriteTools(
         ? fileService.upsert("tech_debt", `Tech Debt [${severity.toUpperCase()}]`, entry)
         : fileService.append("tech_debt", entry);
       await autoEmbed("tech_debt", `Tech Debt [${severity}]`, entry);
+      autoDedup("tech_debt", `Tech Debt [${severity.toUpperCase()}]`);
       sessionManager?.recordActivity("log_tech_debt");
       return {
         content: [{ type: "text" as const, text: `Tech debt recorded:\n\n${written}` }],
@@ -118,6 +127,7 @@ export function registerWriteTools(
         ? fileService.upsert("progress", milestone, entry)
         : fileService.append("progress", entry);
       await autoEmbed("progress", milestone, entry);
+      autoDedup("progress", milestone);
       sessionManager?.recordActivity("update_progress");
       return {
         content: [{ type: "text" as const, text: `Progress updated:\n\n${written}` }],
@@ -143,6 +153,7 @@ export function registerWriteTools(
         ? fileService.upsert("context", category ? `[${category}]` : "Context", entry)
         : fileService.append("context", entry);
       await autoEmbed("context", category || "Context", entry);
+      autoDedup("context", category ? `[${category}]` : "Context");
       sessionManager?.recordActivity("add_context");
       return {
         content: [{ type: "text" as const, text: `Context saved:\n\n${written}` }],

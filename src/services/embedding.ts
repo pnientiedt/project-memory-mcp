@@ -138,6 +138,42 @@ export function contentId(sourceFile: string, section: string, content: string):
     .digest("hex");
 }
 
+export interface ParsedEntry {
+  raw: string;      // full block including the <!-- --> header line
+  header: string;   // e.g. "<!-- date:2024-01-01 hash:abc123def456 -->"
+  hash: string;     // e.g. "abc123def456"
+  body: string;     // everything after the <!-- --> header line
+  section: string;  // the H2 title (stripped of leading ##)
+}
+
+const ENTRY_HEADER_RE = /<!-- date:(\d{4}-\d{2}-\d{2}) hash:([a-f0-9]{12}) -->/;
+
+/**
+ * Parse a memory file into individual entries by splitting on the <!-- date:... hash:... --> delimiter.
+ */
+export function parseEntries(fileContent: string): ParsedEntry[] {
+  const chunks = fileContent.split(/(?=<!-- date:\d{4}-\d{2}-\d{2} hash:[a-f0-9]{12} -->)/);
+  const entries: ParsedEntry[] = [];
+
+  for (const chunk of chunks) {
+    const trimmed = chunk.trim();
+    if (!trimmed) continue;
+    const match = ENTRY_HEADER_RE.exec(trimmed);
+    if (!match) continue; // preamble before any entry
+
+    const headerLine = match[0];
+    const body = trimmed.slice(headerLine.length).trim();
+    if (!body) continue;
+
+    const h2Match = /^## (.+)$/m.exec(body);
+    const section = h2Match ? h2Match[1].trim() : "(untitled)";
+
+    entries.push({ raw: trimmed, header: headerLine, hash: match[2], body, section });
+  }
+
+  return entries;
+}
+
 /**
  * Parse markdown file into sections for embedding.
  */
