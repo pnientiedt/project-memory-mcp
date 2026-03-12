@@ -605,7 +605,55 @@ Phase 1 allein ist ein nutzbarer MVP:
 
 ---
 
-## 8. Offene Fragen & Risiken
+---
+
+## 8. Multi-Projekt-Nutzbarkeit (Phase 6)
+
+### Ziel
+
+`project-memory-mcp` soll als öffentliches npm-Paket einfach in beliebigen Projekten nutzbar sein — unabhängig von Programmiersprache oder Stack.
+
+### Primäre User Story
+
+| ID | Als... | möchte ich... | damit... |
+|----|--------|---------------|----------|
+| US-10 | Entwickler in einem neuen Projekt | `npx project-memory-mcp init` ausführen | der MCP Server sofort einsatzbereit ist, ohne manuelles Setup |
+
+### Funktionale Anforderungen — Phase 6
+
+#### 6.1 npm-Paket & Distribution
+
+| ID | Anforderung | Priorität |
+|----|-------------|-----------|
+| F-90 | Paket unter dem Namen `project-memory-mcp` auf npm veröffentlicht | Must |
+| F-91 | `npx project-memory-mcp` startet den Server ohne lokale Installation | Must |
+| F-92 | `npx project-memory-mcp init` richtet ein Projekt vollständig ein | Must |
+| F-93 | `package.json` enthält `files`-Feld: nur `dist/`, `hooks/` werden veröffentlicht | Must |
+| F-94 | Paket ist sprachagnostisch — kein Node.js im Zielprojekt erforderlich | Must |
+
+#### 6.2 Enhanced `init` Command
+
+| ID | Anforderung | Priorität |
+|----|-------------|-----------|
+| F-95 | `init` erstellt `.project-memory/config.yaml` mit kommentierten Defaults | Must |
+| F-96 | `init` trägt `.project-memory/embeddings.db` und `server.log` in `.gitignore` des Zielprojekts ein | Must |
+| F-97 | `init` registriert den MCP Server in `.mcp.json` des Zielprojekts (anlegen falls nicht vorhanden) | Must |
+| F-98 | `init` installiert den Post-Commit-Hook (bereits implementiert, F-40) | Must |
+| F-99 | `init` prüft ob Ollama verfügbar ist und führt `ollama pull <model>` aus wenn ja | Should |
+| F-100 | `init` ist idempotent — mehrfaches Ausführen verändert bestehende Konfiguration nicht | Must |
+| F-101 | `init` gibt einen klaren Schritt-für-Schritt-Output aus (was wurde gemacht / übersprungen) | Must |
+
+#### 6.3 Akzeptanzkriterien Phase 6
+
+- [ ] `npx project-memory-mcp init` in einem leeren Verzeichnis legt alle nötigen Dateien an
+- [ ] `.mcp.json` wird korrekt erstellt/ergänzt — bestehende Server-Einträge bleiben erhalten
+- [ ] `.gitignore` wird korrekt ergänzt — bestehende Einträge bleiben erhalten
+- [ ] `npx project-memory-mcp` startet den Server ohne Build-Schritt im Zielprojekt
+- [ ] Der Flow funktioniert in einem Nicht-Node.js-Projekt (z.B. Go, Python)
+
+---
+
+## 9. Offene Fragen & Risiken
 
 ### Technische Risiken
 
