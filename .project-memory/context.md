@@ -90,3 +90,7 @@ Excluded: `embeddings.db`, `server.log`
 - **Key completed epics:** `scaile-*` (full initial implementation + npm packaging), `pmm-sks` (upsert support for write tools + FileService).
 - **Known sensitive areas:** `hooks/post-commit` shell script has had injection vulnerabilities fixed — do not simplify it; `src/services/summarization.ts` Ollama prompts are carefully calibrated — change cautiously.
 - **Issue tracking:** Beads (`bd` CLI), prefix `pmm-*`.
+<!-- date:2026-03-12 hash:816a67bc973e -->
+## [ollama-fallback]
+
+Ollama is used for AI-powered summarization and merging of duplicate memory entries. When Ollama is unavailable or returns an error, the fallback strategy is to retain whichever of the two duplicate entries is longer.
