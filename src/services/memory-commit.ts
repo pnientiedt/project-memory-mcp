@@ -20,19 +20,22 @@ export async function autoCommitMemory(skipKeyword: string, repoRoot?: string): 
   }
 
   const git = simpleGit(root);
-  const status = await git.status();
-  const memoryFiles = status.files
-    .map((f) => f.path)
-    .filter((p) => p.startsWith(".project-memory/") && p.endsWith(".md"));
-
-  if (memoryFiles.length === 0) return;
 
   try {
-    await git.add(memoryFiles);
-    await git.commit(`chore: update project memory ${skipKeyword}`, memoryFiles, {
+    // Stage all .project-memory/ files — .gitignore already excludes db/log/yaml,
+    // so only .md files will be staged.
+    await git.add([".project-memory/"]);
+
+    // Check if anything is actually staged before committing
+    const staged = await git.status();
+    const stagedMemoryFiles = staged.staged.filter((p) => p.startsWith(".project-memory/"));
+
+    if (stagedMemoryFiles.length === 0) return;
+
+    await git.commit(`chore: update project memory ${skipKeyword}`, {
       "--no-verify": null,
     });
-    process.stderr.write(`[project-memory] auto-committed memory: ${memoryFiles.join(", ")}\n`);
+    process.stderr.write(`[project-memory] auto-committed memory: ${stagedMemoryFiles.join(", ")}\n`);
   } catch (err) {
     process.stderr.write(`[project-memory] autoCommitMemory failed: ${String(err)}\n`);
     throw err;
